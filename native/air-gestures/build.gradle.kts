@@ -4,7 +4,7 @@ android {
  namespace = "dev.kb896.airgestures"; compileSdk = 36
  defaultConfig { minSdk = 33; consumerProguardFiles("consumer-rules.pro"); ndk { abiFilters += "arm64-v8a" } }
  sourceSets["main"].apply {
-  manifest.srcFile("src/main/AndroidManifest.xml")
+  manifest.srcFile("build/upstream/AndroidManifest.xml")
   java.srcDir("build/upstream/app/src/main/java")
   res.srcDir("../../vendor/air-gestures/app/src/main/res")
   assets.srcDir("../../vendor/air-gestures/app/src/main/assets")

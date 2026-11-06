@@ -57,7 +57,7 @@ reviewable when requested.
 
 ## First native integration validation
 
-1,062 JavaScript tests passed (3 skipped), with TypeScript typecheck passing. The
+1,064 JavaScript tests passed (3 skipped), with TypeScript typecheck passing. The
 complete Android APK built locally. Five headless emulator scenarios passed:
 full JNI load, phone-profile restoration without mapping changes, glasses-mode-only
 native dispatch, unified manager/setup/mode UI, and isolated sign-in cookies.

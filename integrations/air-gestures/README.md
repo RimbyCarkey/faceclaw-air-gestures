@@ -11,3 +11,9 @@ The full Air Gestures UI is retained. Toggle destination by swapping profiles an
 remembering the previous phone profile. There is one BandService transport owner.
 Meta sign-in is isolated, secrets are backup-excluded, and APK update links point
 to this fork's unified releases. Firmware update controls are unchanged.
+
+The manifest is generated from upstream on every preparation. All screens,
+services and receivers are retained, including the standard profile announcement
+receiver. Only the app-level attributes, standalone launcher and Meta sign-in
+process are adapted for the host. New upstream components are therefore not
+silently omitted by a stale copied manifest.

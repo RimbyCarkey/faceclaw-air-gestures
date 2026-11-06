@@ -31,7 +31,8 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
+        id: native-deps
         with:
           path: |
             ~/.cargo/registry
@@ -39,10 +40,11 @@ jobs:
             vendor/air-gestures/rust/target
             ~/.gradle/caches
             ~/.gradle/wrapper
+          restore-keys: native-band-${{ runner.os }}-
           key: native-band-${{ runner.os }}-${{ hashFiles('vendor/air-gestures/rust/Cargo.lock', 'native/air-gestures/build.gradle.kts') }}
       - name: Install pinned Android and Rust prerequisites
         run: |
-          sdkmanager --channel=3 'platforms;android-36' 'build-tools;35.0.1' 'ndk;30.0.16248370'
+          sdkmanager --channel=3 'emulator' 'platforms;android-36' 'build-tools;35.0.1' 'ndk;30.0.16248370'
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
           rustup toolchain install 1.99.1 --profile minimal
           rustup target add --toolchain 1.99.1 aarch64-linux-android
@@ -61,3 +63,14 @@ jobs:
           path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+      - name: Save native dependency cache even after a build failure
+        if: always() && steps.native-deps.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            vendor/air-gestures/rust/target
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: native-band-${{ runner.os }}-${{ hashFiles('vendor/air-gestures/rust/Cargo.lock', 'native/air-gestures/build.gradle.kts') }}

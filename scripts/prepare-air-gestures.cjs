@@ -12,6 +12,7 @@ function prepareAirGestures() {
  const args = ['apply', '--directory', 'native/air-gestures/build/upstream', 'integrations/air-gestures/host.patch'];
  execFileSync('git', ['apply', '--check', ...args.slice(1)], { cwd: root, stdio: 'inherit' });
  execFileSync('git', args, { cwd: root, stdio: 'inherit' });
+ execFileSync('python3', [path.join(root, 'scripts/air-gestures-manifest.py')], { cwd: root, stdio: 'inherit' });
 }
 if (require.main === module) prepareAirGestures();
 module.exports = { prepareAirGestures };
