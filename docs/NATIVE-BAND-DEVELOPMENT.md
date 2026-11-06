@@ -54,3 +54,11 @@ standalone APK would not be a valid integration update. Hardware firmware update
 remain explicit Air Gestures features. Upstream PRs are not sent to the original
 maintainers automatically; this fork is organized to make those contributions
 reviewable when requested.
+
+## First native integration validation
+
+1,062 JavaScript tests passed (3 skipped), with TypeScript typecheck passing. The
+complete Android APK built locally. Five headless emulator scenarios passed:
+full JNI load, phone-profile restoration without mapping changes, glasses-mode-only
+native dispatch, unified manager/setup/mode UI, and isolated sign-in cookies.
+Physical band and G2 validation is still pending.

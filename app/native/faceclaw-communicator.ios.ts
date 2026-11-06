@@ -66,7 +66,7 @@ export type RawInputEvent = { ringInput?: RingInput } & (
   | { kind: "text-click"; containerName: string; eventType: number; eventSource: number; systemExitReasonCode: number; frameId: number }
   | { kind: "sys-event"; containerName: string; eventType: number; eventSource: number; systemExitReasonCode: number; frameId: number }
   | { kind: "even-ai"; containerName: string; eventType: number; eventSource: number; systemExitReasonCode: number; frameId: number }
-  | { kind: "watch-gesture"; containerName: string; eventType: number; eventSource: number; systemExitReasonCode: number; frameId: number }
+  | { kind: "watch-gesture" | "band-gesture"; containerName: string; eventType: number; eventSource: number; systemExitReasonCode: number; frameId: number }
   | { kind: "display-wake"; containerName: string; eventType: number; eventSource: number; systemExitReasonCode: number; frameId: number }
 );
 
