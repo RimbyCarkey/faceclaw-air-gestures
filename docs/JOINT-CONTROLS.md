@@ -95,3 +95,6 @@ All existing feature screens and native implementations are included; this is no
 a claim that every combination has been hardware-tested. Real band enrollment,
 physical mode switching, firmware operations, handwriting accuracy and G2 delivery
 need hardware testing. No physical device was flashed or enrolled during setup.
+
+See the [fork privacy notice](../PRIVACY) for Meta services, account/session storage,
+optional Android access and release checks.
