@@ -3,7 +3,12 @@
 This is a real GitHub fork of jimrandomh/faceclaw. The root keeps its source/history
 so Faceclaw can review small native-input and optional-host changes upstream.
 Air Gestures is vendor/air-gestures, a pinned submodule with its own band-core
-submodule. Clone with `git clone --recurse-submodules`.
+submodule. Clone both codebases together:
+
+```sh
+git clone --recurse-submodules https://github.com/RimbyCarkey/faceclaw-air-gestures.git
+cd faceclaw-air-gestures
+```
 
 The native module builds the full Air Gestures source and resources, not a reduced
 copy. Host patches are applied to native/air-gestures/build/upstream, leaving the
@@ -58,7 +63,7 @@ reviewable when requested.
 ## First native integration validation
 
 1,064 JavaScript tests passed (3 skipped), with TypeScript typecheck passing. The
-complete Android APK built locally. Five headless emulator scenarios passed:
-full JNI load, phone-profile restoration without mapping changes, glasses-mode-only
+complete Android APK built locally. Six headless emulator scenarios passed:
+full JNI load, phone-profile restoration and automatic-app association preservation, glasses-mode-only
 native dispatch, unified manager/setup/mode UI, and isolated sign-in cookies.
 Physical band and G2 validation is still pending.

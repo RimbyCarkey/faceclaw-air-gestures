@@ -40,11 +40,12 @@ jobs:
             vendor/air-gestures/rust/target
             ~/.gradle/caches
             ~/.gradle/wrapper
+            platforms/android/app/build/faceclaw-native
           restore-keys: native-band-${{ runner.os }}-
           key: native-band-${{ runner.os }}-${{ hashFiles('vendor/air-gestures/rust/Cargo.lock', 'native/air-gestures/build.gradle.kts') }}
       - name: Install pinned Android and Rust prerequisites
         run: |
-          sdkmanager --channel=3 'emulator' 'platforms;android-36' 'build-tools;35.0.1' 'ndk;30.0.16248370'
+          sdkmanager --channel=3 'platforms;android-36' 'build-tools;35.0.1' 'ndk;30.0.16248370'
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
           rustup toolchain install 1.99.1 --profile minimal
           rustup target add --toolchain 1.99.1 aarch64-linux-android
@@ -56,6 +57,9 @@ jobs:
       - name: Build the pinned native band core
         run: bash scripts/build-neural-band-rust.sh
       - name: Build unified debug APK
+        env:
+          # APK compilation does not need an AVD. Gradle still validates SDK/JDK.
+          NS_SKIP_ENV_CHECK: '1'
         run: npx --yes --package=nativescript@9.1.2 ns build android
       - uses: actions/upload-artifact@v4
         with:
@@ -73,4 +77,5 @@ jobs:
             vendor/air-gestures/rust/target
             ~/.gradle/caches
             ~/.gradle/wrapper
+            platforms/android/app/build/faceclaw-native
           key: native-band-${{ runner.os }}-${{ hashFiles('vendor/air-gestures/rust/Cargo.lock', 'native/air-gestures/build.gradle.kts') }}

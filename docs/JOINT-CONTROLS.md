@@ -24,11 +24,14 @@ use the watch remote, a TCP connector, or Android automation broadcasts.
 
 ## Glasses mode
 
-This selects a dedicated **Faceclaw** gesture profile while remembering your
-previous phone profile. Only this profile's Faceclaw actions route to the glasses.
-Other Air Gestures feature screens remain accessible in the same APK.
+This selects a dedicated **Faceclaw glasses** gesture profile while remembering your
+previous phone profile. The new profile has a separate internal ID, so an older
+prototype profile cannot hide its default mode-toggle mapping. Only this profile's Faceclaw actions route to the glasses.
+Other Air Gestures feature screens remain accessible in the same APK. Automatic
+phone-app profile associations are temporarily suspended in glasses mode and
+resume unchanged in phone mode.
 
-| Band gesture | Action in the default Faceclaw profile |
+| Band gesture | Action in the default Faceclaw glasses profile |
 |---|---|
 | Index tap | Select/click |
 | Middle tap | Back/double-click; normal Faceclaw sleep/wake behavior applies |
@@ -39,7 +42,7 @@ Other Air Gestures feature screens remain accessible in the same APK.
 Native glasses inputs are ignored when G2 is disconnected or locked. The native
 mode-switch action still works independently of the G2 connection, so you can
 return to phone controls without reconnecting the glasses. Re-selecting the profile
-does not overwrite your custom Faceclaw mappings.
+does not overwrite your custom Faceclaw glasses mappings.
 
 ## Phone mode and a gesture to switch back
 

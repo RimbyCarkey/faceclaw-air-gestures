@@ -17,21 +17,27 @@ class FaceclawHost private constructor(private val context: Context) {
     fun toggleGlassesMode() { setGlassesMode(!isGlassesMode()) }
     fun setGlassesMode(enabled: Boolean) {
         if (enabled == isGlassesMode()) return
-        if (enabled) {
-            val current = Profiles.load(context).picked
-            if (current != "faceclaw") prefs.edit().putString("phoneProfile", current).apply()
-            selectFaceclawProfile()
-        } else {
-            val profiles = Profiles.load(context).profiles
-            val stored = prefs.getString("phoneProfile", "")
-            val restore = profiles.firstOrNull { it.id == stored && it.id != "faceclaw" }
-                ?: profiles.firstOrNull { it.id != "faceclaw" }
-            check(restore != null) { "Create a phone profile in Air Gestures before switching." }
-            Profiles.update(context) { it.copy(picked = restore.id) }
-            BandService.pickProfile(context, restore.id)
-        }
         prefs.edit().putBoolean("glasses", enabled).apply()
+        try {
+            if (enabled) {
+                val current = Profiles.load(context).picked
+                if (current != "faceclaw.native") prefs.edit().putString("phoneProfile", current).apply()
+                selectFaceclawProfile()
+            } else {
+                val profiles = Profiles.load(context).profiles
+                val stored = prefs.getString("phoneProfile", "")
+                val restore = profiles.firstOrNull { it.id == stored && it.id != "faceclaw.native" }
+                    ?: profiles.firstOrNull { it.id != "faceclaw.native" }
+                check(restore != null) { "Create a phone profile in Air Gestures before switching." }
+                Profiles.update(context) { it.copy(picked = restore.id) }
+                BandService.pickProfile(context, restore.id)
+            }
+        } catch (error: Exception) {
+            prefs.edit().putBoolean("glasses", !enabled).apply()
+            throw error
+        }
     }
+
     fun isRunning() = BandService.instance != null
     fun stop() { BandService.stop(context) }
     fun selectFaceclawProfile() {
@@ -42,16 +48,17 @@ class FaceclawHost private constructor(private val context: Context) {
             put("index_double", "faceclaw.keyboard"); put("index_hold", "faceclaw.toggle")
         }
         val list = Profiles.update(context) { before ->
-            val found = before.profiles.firstOrNull { it.id == "faceclaw" }
-            val profiles = if (found == null) before.profiles + Profile("faceclaw", "Faceclaw", mapping, DialChoice.NONE.key) else before.profiles
-            before.copy(profiles = profiles, picked = "faceclaw")
+            val found = before.profiles.firstOrNull { it.id == "faceclaw.native" }
+            val profiles = if (found == null) before.profiles + Profile("faceclaw.native", "Faceclaw glasses", mapping, DialChoice.NONE.key) else before.profiles
+            before.copy(profiles = profiles, picked = "faceclaw.native")
         }
         BandService.pickProfile(context, list.picked)
     }
     companion object {
         private var instance: FaceclawHost? = null
         private val main = Handler(Looper.getMainLooper())
-        @JvmStatic fun getInstance(context: Context): FaceclawHost = instance ?: FaceclawHost(context.applicationContext).also { instance = it }
+        fun glassesMode(context: Context) = context.getSharedPreferences("faceclaw-band-mode", Context.MODE_PRIVATE).getBoolean("glasses", false)
+        @JvmStatic @Synchronized fun getInstance(context: Context): FaceclawHost = instance ?: FaceclawHost(context.applicationContext).also { instance = it }
         fun dispatch(action: String): String? {
             val input = action.removePrefix("faceclaw.")
             if (input == "toggle") {

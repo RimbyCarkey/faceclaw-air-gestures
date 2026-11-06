@@ -105,3 +105,16 @@
          background = NeuDrawable(context, 999f, fill = Cb.INK_900, solid = true, soft = false)
          setTextColor(android.graphics.Color.WHITE)
          val icon = context.getDrawable(R.drawable.store_896)!!.apply { setBounds(0, 0, dpi(18f), dpi(18f)) }
+--- a/app/src/main/java/dev/kb896/airgestures/Prefs.kt
++++ b/app/src/main/java/dev/kb896/airgestures/Prefs.kt
+@@ -99,7 +99,9 @@
+      * the profiles this band uses, or [all] of them (the screens' reports, which go by the list's indexes).
+      */
+     fun profilesJson(all: Boolean = false): String = Mappings.profilesJson(Mappings.Input(
+-        if (all) Profiles.load(context) else Bands.profiles(context, slot),
++        (if (all) Profiles.load(context) else Bands.profiles(context, slot)).let { list ->
++            if (!all && FaceclawHost.glassesMode(context)) list.copy(apps = emptyMap()) else list
++        },
+         Profiles.band(context),
+         calls(),
+         Profiles.sharedDrawings(context),

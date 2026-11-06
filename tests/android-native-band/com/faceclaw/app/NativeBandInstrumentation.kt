@@ -11,6 +11,8 @@ import dev.kb896.airgestures.Actions
 import dev.kb896.airgestures.Bridge
 import dev.kb896.airgestures.FaceclawHost
 import dev.kb896.airgestures.Profiles
+import dev.kb896.airgestures.Prefs
+import org.json.JSONObject
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 class NativeBandInstrumentation : Instrumentation() {
@@ -25,12 +27,17 @@ class NativeBandInstrumentation : Instrumentation() {
    results += "PASS: full Air Gestures ARM64 JNI loads"
    lateinit var host: FaceclawHost
    val phone = Profiles.load(targetContext).picked
+   Profiles.update(targetContext) { it.copy(apps = it.apps + ("dev.fixture.phone" to phone)) }
    val originalMap = Profiles.load(targetContext).profiles.first { it.id == phone }.map
    runOnMainSync { host = FaceclawHost.getInstance(targetContext); host.setGlassesMode(true) }
-   check(host.isGlassesMode()); check(Profiles.load(targetContext).picked == "faceclaw")
+   check(host.isGlassesMode()); check(Profiles.load(targetContext).picked == "faceclaw.native")
+   check(JSONObject(Prefs(targetContext).profilesJson()).getJSONObject("apps").length() == 0)
+   check(Profiles.load(targetContext).apps["dev.fixture.phone"] == phone)
    runOnMainSync { check(Actions(targetContext).run("faceclaw.toggle") == null) }
    SystemClock.sleep(200)
    check(!host.isGlassesMode()); check(Profiles.load(targetContext).picked == phone)
+   check(JSONObject(Prefs(targetContext).profilesJson()).getJSONObject("apps").has("dev.fixture.phone"))
+   results += "PASS: glasses mode suppresses automatic phone-profile takeover without losing its associations"
    check(Profiles.load(targetContext).profiles.first { it.id == phone }.map == originalMap)
    results += "PASS: native toggle restores the original phone profile without overwriting mappings"
    val received = CountDownLatch(1)
