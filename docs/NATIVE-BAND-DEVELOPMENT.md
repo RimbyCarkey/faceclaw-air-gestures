@@ -67,3 +67,18 @@ complete Android APK built locally. Six headless emulator scenarios passed:
 full JNI load, phone-profile restoration and automatic-app association preservation, glasses-mode-only
 native dispatch, unified manager/setup/mode UI, and isolated sign-in cookies.
 Physical band and G2 validation is still pending.
+
+## Maintainer-reported phone test — 2026-11-06
+
+The native.2 preview passed phone-only checks on a physical Zinwa Q25 running
+Android 17 (ARM64). Installation, interactive preview, native manager access,
+mode/profile restoration and relaunch persistence passed. Original mappings and
+app associations remained unchanged; no crash or ANR was reported.
+
+The observed clipping belongs to the phone's own sizing configuration; the
+maintainer has a phone-side solution. No application layout fix is needed.
+The full phone checklist/report and screenshots are not published here.
+
+Actual band input, handwriting/text entry, enrollment, firmware operations and
+G2 delivery have not been tested on physical hardware. Phone-only results do not
+remove those upstream-contribution requirements.
