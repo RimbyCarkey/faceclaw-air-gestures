@@ -3,7 +3,7 @@
 A public Faceclaw fork building **one Android APK**, with Air Gestures kept as an
 independently pinned upstream codebase. All its native feature screens remain
 available, with explicit glasses/phone mode switching and a native band input
-source rather than the watch connector.
+source.
 
 **[Joint controls: setup, modes, gestures and handwriting](docs/JOINT-CONTROLS.md)**
 
