@@ -1,3 +1,4 @@
+import { nativeBand, nativeBandAvailable, subscribeBandMode } from '../band/native';
 import { RemoteControlsViewModel } from './remote-controls-view-model';
 import { KeyboardInputViewModel } from './keyboard-input-view-model';
 import { BleBandwidthMeter } from "./ble-bandwidth-meter";
@@ -85,6 +86,7 @@ export class MainViewModel extends RemoteControlsViewModel {
    */
   attach(): void {
     if (this.unsubscribers.length > 0) return;
+    this.unsubscribers.push(subscribeBandMode(() => this.notifyPropertyChange("bandModeLabel", this.bandModeLabel)));
     this.unsubscribers.push(dashboardController.subscribe((snapshot) => {
       this.status = snapshot.status;
       this.previewMode = snapshot.previewMode;
@@ -844,7 +846,20 @@ export class MainViewModel extends RemoteControlsViewModel {
     }
   }
 
-  onNeuralBandTap(): void { Frame.topmost()?.navigate({ moduleName: "phone-ui/neural-band-page" }); }
+  override get bandModeLabel(): string {
+    if (!nativeBandAvailable()) return 'Native band module unavailable.';
+    return nativeBand().isGlassesMode() ? 'Glasses mode · native band input' : 'Phone mode · Air Gestures controls';
+  }
+  override onBandTabTap(): void {
+    super.onBandTabTap();
+    this.notifyPropertyChange('bandModeLabel', this.bandModeLabel);
+  }
+  override onBandModeToggle(): void {
+    try { nativeBand().toggleGlassesMode(); this.notifyPropertyChange('bandModeLabel', this.bandModeLabel); }
+    catch (error) { void Dialogs.alert({ title: 'Neural Band', message: String(error), okButtonText: 'OK' }); }
+  }
+
+  override onNeuralBandTap(): void { Frame.topmost()?.navigate({ moduleName: "phone-ui/neural-band-page" }); }
 
   onPermissionsTap(): void {
     Frame.topmost()?.navigate({

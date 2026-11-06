@@ -1,7 +1,7 @@
-import { Dialogs, Observable } from '@nativescript/core';
+import { Dialogs, Observable, isAndroid } from '@nativescript/core';
 import { brightnessSetting, displayLayoutSetting, type BrightnessSetting } from '../ui/dashboard-settings';
 
-type ControlsTab = 'settings' | 'watch' | 'ring';
+type ControlsTab = 'settings' | 'watch' | 'band' | 'ring';
 // Remember the tab across navigation on both platforms, without persisting it.
 let lastControlsTab: ControlsTab = 'watch';
 
@@ -17,6 +17,18 @@ export class RemoteControlsViewModel extends Observable {
   get watchTabVisibility(): "visible" | "collapse" {
     return this._controlsTab === "watch" ? "visible" : "collapse";
   }
+
+  get bandModeLabel(): string { return 'Native band controls are available on Android.'; }
+  onBandModeToggle(): void { /* Android host supplies the native band action. */ }
+  onNeuralBandTap(): void { /* Android host supplies band management navigation. */ }
+
+  get bandTabVisibility(): "visible" | "collapse" { return this._controlsTab === 'band' ? 'visible' : 'collapse'; }
+  get bandTabButtonVisibility(): "visible" | "collapse" { return isAndroid ? 'visible' : 'collapse'; }
+  get controlsTabColumns(): string { return isAndroid ? '*,*,*,*,auto,auto' : '*,*,*,auto,auto'; }
+  get ringTabColumn(): number { return isAndroid ? 3 : 2; }
+  get micTabColumn(): number { return isAndroid ? 4 : 3; }
+  get keyboardTabColumn(): number { return isAndroid ? 5 : 4; }
+  get bandTabClass(): string { return this._controlsTab === 'band' ? 'tab-button tab-button-selected' : 'tab-button'; }
 
   get ringTabVisibility(): "visible" | "collapse" {
     return this._controlsTab === "ring" ? "visible" : "collapse";
@@ -72,6 +84,8 @@ export class RemoteControlsViewModel extends Observable {
     this.setControlsTab("watch");
   }
 
+  onBandTabTap(): void { this.setControlsTab("band"); }
+
   onRingTabTap(): void {
     this.setControlsTab("ring");
   }
@@ -84,6 +98,8 @@ export class RemoteControlsViewModel extends Observable {
     lastControlsTab = tab;
     this.notifyPropertyChange("settingsTabVisibility", this.settingsTabVisibility);
     this.notifyPropertyChange("watchTabVisibility", this.watchTabVisibility);
+    this.notifyPropertyChange("bandTabVisibility", this.bandTabVisibility);
+    this.notifyPropertyChange("bandTabClass", this.bandTabClass);
     this.notifyPropertyChange("ringTabVisibility", this.ringTabVisibility);
     this.notifyPropertyChange("settingsTabClass", this.settingsTabClass);
     this.notifyPropertyChange("watchTabClass", this.watchTabClass);

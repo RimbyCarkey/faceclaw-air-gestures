@@ -44,7 +44,7 @@ class NativeBandInstrumentation : Instrumentation() {
    var value = ""
    runOnMainSync {
     host.setGlassesMode(true)
-    host.setListener(object : FaceclawHost.Listener { override fun onInput(input: String) { value = input; received.countDown() } })
+    host.setListener(object : FaceclawHost.Listener { override fun onInput(input: String) { if (input != "mode-changed") { value = input; received.countDown() } } })
     check(Actions(targetContext).run("faceclaw.click") == null)
    }
    check(received.await(3, TimeUnit.SECONDS)); check(value == "click")
@@ -52,7 +52,11 @@ class NativeBandInstrumentation : Instrumentation() {
    results += "PASS: in-process band actions dispatch only in glasses mode"
    targetContext.getSharedPreferences("prefs.db", 0).edit().putBoolean("onboarding.complete", true).putBoolean("onboarding.previewOnly", true).commit()
    targetContext.startActivity(Intent().setClassName(pkg, "com.tns.NativeScriptActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-   click("More options"); click("Neural Band"); awaitText("Native Neural Band controls")
+   click("Band"); awaitText("Phone mode · Air Gestures controls")
+   click("Toggle glasses / phone mode"); awaitText("Glasses mode · native band input")
+   click("Toggle glasses / phone mode"); awaitText("Phone mode · Air Gestures controls")
+   results += "PASS: Band tab beside Watch provides independent live mode controls"
+   click("Band settings & Air Gestures"); awaitText("Native Neural Band controls")
    click("Toggle glasses / phone mode"); awaitText("Glasses mode enabled.")
    click("Toggle glasses / phone mode"); awaitText("Phone mode restored.")
    click("Air Gestures · all features"); awaitText("Gestures")

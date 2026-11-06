@@ -12,7 +12,8 @@ use the watch remote, a TCP connector, or Android automation broadcasts.
    another signer, protect your settings and export any enrolled band's confirmed
    owner bundle before uninstalling the previous app. Android does not allow us to
    bypass a signing mismatch or read another app's private owner keys.
-2. Open Faceclaw's phone menu → **Neural Band** → **Enrollment, import and export**.
+2. Tap the **Band** tab beside **Watch** → **Band settings & Air Gestures** →
+   **Enrollment, import and export**. The phone menu → Neural Band remains a shortcut.
    Enroll through Meta, or import an existing Air Gestures owner bundle. You do not
    need an owner bundle if enrolling from scratch. Read the claim dialog: claiming
    changes ownership. Keep exported bundles private.
@@ -20,7 +21,9 @@ use the watch remote, a TCP connector, or Android automation broadcasts.
    in Faceclaw. Grant the Android permissions required for the features you use.
    Meta sign-in uses a separate process/WebView cookie store; keys and encrypted
    account sessions are excluded from Android backups.
-4. Tap **Toggle glasses / phone mode** to choose where the band controls go.
+4. Tap **Toggle glasses / phone mode** on the Band tab or the band settings page
+   to choose where the band controls go. The Band tab shows the current mode,
+   including changes made with the band gesture.
 
 ## Glasses mode
 

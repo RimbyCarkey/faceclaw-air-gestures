@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loader } = require('./helpers/load-typescript.cjs');
 
-function fixture() {
+function fixture(android = false) {
   let brightness = '40', mode = 'small', picked;
   const changes = [], writes = [];
   class Observable {
@@ -14,7 +14,7 @@ function fixture() {
       isDisabled: value => value === 'huge', displayValue(value = mode) { return value[0].toUpperCase() + value.slice(1); } },
   };
   const { RemoteControlsViewModel } = loader({}, {
-    '@nativescript/core': { Observable, Dialogs: { action: async () => picked } },
+    '@nativescript/core': { Observable, isAndroid: android, Dialogs: { action: async () => picked } },
     '../ui/dashboard-settings': settings,
   })('app/phone-ui/remote-controls-view-model.ts');
   return { model: new RemoteControlsViewModel(), create: () => new RemoteControlsViewModel(), changes, writes,
@@ -28,7 +28,7 @@ test('shared controls preserve the selected tab across page visits and update al
   assert.equal(h.model.watchTabVisibility, 'collapse');
   assert.equal(h.model.ringTabVisibility, 'visible');
   assert.match(h.model.ringTabClass, /tab-button-selected/);
-  assert.equal(h.changes.length, 6);
+  assert.equal(h.changes.length, 8);
   assert.equal(h.create().ringTabVisibility, 'visible');
   h.model.onSettingsTabTap();
   assert.equal(h.model.settingsTabVisibility, 'visible');
@@ -61,4 +61,23 @@ test('shared display-mode picker preserves cancellation and applies the selected
   h.pick('Large'); await h.model.onDisplayModeTap();
   assert.equal(h.mode(), 'large');
   assert.equal(h.model.displayModeLabel, 'Large ▾');
+});
+
+test('Android Band tab is independent of Watch and Ring and persists across navigation', () => {
+  const h = fixture(true);
+  assert.equal(h.model.bandTabButtonVisibility, 'visible');
+  assert.equal(h.model.ringTabColumn, 3);
+  h.model.onBandTabTap();
+  assert.equal(h.model.bandTabVisibility, 'visible');
+  assert.equal(h.model.watchTabVisibility, 'collapse');
+  assert.equal(h.model.ringTabVisibility, 'collapse');
+  assert.match(h.model.bandTabClass, /selected/);
+  assert.equal(h.create().bandTabVisibility, 'visible');
+  h.model.onWatchTabTap(); assert.equal(h.model.bandTabVisibility, 'collapse');
+});
+test('non-Android controls retain the original three-tab layout', () => {
+  const h = fixture(false);
+  assert.equal(h.model.bandTabButtonVisibility, 'collapse');
+  assert.equal(h.model.controlsTabColumns, '*,*,*,auto,auto');
+  assert.equal(h.model.ringTabColumn, 2);
 });

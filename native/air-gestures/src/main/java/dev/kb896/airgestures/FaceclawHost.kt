@@ -36,6 +36,7 @@ class FaceclawHost private constructor(private val context: Context) {
             prefs.edit().putBoolean("glasses", !enabled).apply()
             throw error
         }
+        main.post { listener?.onInput("mode-changed") }
     }
 
     fun isRunning() = BandService.instance != null

@@ -1,8 +1,8 @@
 <!--
-  The phone's controller for the glasses, as a three-tab area below the mirror:
+  The phone's controller for the glasses, as an input-tab area below the mirror:
   Settings (display mode, brightness and battery levels), Watch (the
   simulated watch face: same scheme as the watch pad - tap = select,
-  double-tap or two fingers = back, hold = menu, swipes navigate), and Ring
+  double-tap or two fingers = back, hold = menu, swipes navigate), Band (native band controls and management), and Ring
   (a touchpad on the ring's own scheme: vertical swipes scroll,
   tap/double-tap/hold = click/double-click/long-press). Tap-then-hold on either pad is the G2 system-menu gesture. The
   narrow mic and keyboard buttons at the tab bar's right edge fire the
@@ -12,24 +12,25 @@
   keyboard dialog is up (keyboard-input mode).
 
   The root is a rows="auto,*" grid so the active section can use the leftover
-  height (the Watch face centers in it); the three sections share the star
+  height (the Watch face centers in it); the sections share the star
   cell, only one visible at a time.
 -->
 <GridLayout xmlns="http://schemas.nativescript.org/tns.xsd" xmlns:android="http://schemas.nativescript.org/tns.xsd" rows="auto,*" class="remote-controls">
   <!-- rows="auto" everywhere below: a rows-less GridLayout's implicit row
        acts as star, and this component sits in a bounded (star-row) parent,
        where that would balloon the first grid to fill all remaining height. -->
-  <GridLayout row="0" rows="auto" columns="*,*,*,auto,auto" class="controls-tab-bar">
+  <GridLayout row="0" rows="auto" columns="{{ controlsTabColumns }}" class="controls-tab-bar">
     <Button col="0" text="Settings" textWrap="false" tap="{{ onSettingsTabTap }}" class="{{ settingsTabClass }}" />
     <Button col="1" text="Watch" textWrap="false" tap="{{ onWatchTabTap }}" class="{{ watchTabClass }}" />
-    <Button col="2" text="Ring" textWrap="false" tap="{{ onRingTabTap }}" class="{{ ringTabClass }}" />
+    <Button col="2" text="Band" textWrap="false" tap="{{ onBandTabTap }}" class="{{ bandTabClass }}" visibility="{{ bandTabButtonVisibility }}" />
+    <Button col="{{ ringTabColumn }}" text="Ring" textWrap="false" tap="{{ onRingTabTap }}" class="{{ ringTabClass }}" />
     <!-- A Button can't hold an image, so these are button-styled tiles. The
          explicit star row makes the cell fill the tile's height so the icon's
          center alignment has room to work in. -->
-    <GridLayout col="3" rows="*" accessible="true" accessibilityRole="button" accessibilityLabel="Voice input" tap="{{ onSyntheticMicTap }}" class="tab-button tab-icon-button">
+    <GridLayout col="{{ micTabColumn }}" rows="*" accessible="true" accessibilityRole="button" accessibilityLabel="Voice input" tap="{{ onSyntheticMicTap }}" class="tab-button tab-icon-button">
       <Image src="res://ic_tab_mic" class="tab-icon" verticalAlignment="center" horizontalAlignment="center" />
     </GridLayout>
-    <GridLayout col="4" rows="*" accessible="true" accessibilityRole="button" accessibilityLabel="Keyboard input" tap="{{ onKeyboardTap }}" class="tab-button tab-icon-button">
+    <GridLayout col="{{ keyboardTabColumn }}" rows="*" accessible="true" accessibilityRole="button" accessibilityLabel="Keyboard input" tap="{{ onKeyboardTap }}" class="tab-button tab-icon-button">
       <Image src="res://ic_tab_keyboard" class="tab-icon" verticalAlignment="center" horizontalAlignment="center" />
     </GridLayout>
   </GridLayout>
@@ -68,6 +69,17 @@
       <Label row="2" isUserInteractionEnabled="false" text="●● wake" visibility="{{ padWakeHintVisibility }}" class="pad-wake-hint" horizontalAlignment="center" />
       <Label row="3" isUserInteractionEnabled="false" text="{{ padDetailLine }}" visibility="{{ padDetailVisibility }}" class="pad-detail" horizontalAlignment="center" />
     </GridLayout>
+
+    <!-- Native band tab is separate from the watch pad. -->
+    <ScrollView visibility="{{ bandTabVisibility }}">
+      <StackLayout>
+        <Label text="Neural Band" class="h2" />
+        <Label text="{{ bandModeLabel }}" textWrap="true" />
+        <Button text="Toggle glasses / phone mode" tap="{{ onBandModeToggle }}" />
+        <Button text="Band settings &amp; Air Gestures" tap="{{ onNeuralBandTap }}" />
+        <Label text="Glasses mode uses native band input. Phone mode restores your Air Gestures profile. Index hold switches back to phone mode in the default glasses profile." textWrap="true" />
+      </StackLayout>
+    </ScrollView>
 
     <!-- Ring tab: a touchpad on the ring's own scheme. Vertical swipes only
          (the ring has no horizontal axis) and no focus/status line; portrait
