@@ -844,6 +844,8 @@ export class MainViewModel extends RemoteControlsViewModel {
     }
   }
 
+  onNeuralBandTap(): void { Frame.topmost()?.navigate({ moduleName: "phone-ui/neural-band-page" }); }
+
   onPermissionsTap(): void {
     Frame.topmost()?.navigate({
       moduleName: "phone-ui/permissions-page",

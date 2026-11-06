@@ -6,7 +6,8 @@ import { createInputDialogMenu, paintInputDialog, type InputDialogRow } from "./
 import { type VoiceSendTarget } from "./voice-input";
 
 /** A menu row: a send target, or Discard (no target). */
-type KeyboardMenuRow = InputDialogRow & { target?: VoiceSendTarget };
+export type KeyboardSendTarget = VoiceSendTarget & { available?: () => boolean };
+type KeyboardMenuRow = InputDialogRow & { target?: KeyboardSendTarget };
 
 /**
  * Where the keyboard dialog shows: on both ends, only the phone's typing panel
@@ -35,6 +36,7 @@ export type KeyboardInputSession = {
   send(): void;
   sendTo(targetId: string): void;
   discard(): void;
+  readonly problem?: string;
   readonly visibility: KeyboardInputVisibility;
   setVisibility(visibility: KeyboardInputVisibility): void;
   /** Messages sent from keyboard dialogs since the app started, newest first. */
@@ -58,7 +60,7 @@ export type KeyboardInputLayerOptions = {
   /** Shared, newest-first list this layer adds its sent message to. */
   history: string[];
   /** Ordered send destinations shown as the first menu rows. */
-  sendTargets: VoiceSendTarget[];
+  sendTargets: KeyboardSendTarget[];
   /** Which send target is highlighted by default (entry-point dependent). */
   defaultTargetIndex?: number;
 };
@@ -74,6 +76,7 @@ export type KeyboardInputLayerOptions = {
  */
 export class KeyboardInputLayer implements Layer, KeyboardInputSession {
   private text = "";
+  problem = "";
   private readonly menu: Menu<KeyboardMenuRow>;
   private closed = false;
   private currentVisibility: KeyboardInputVisibility;
@@ -86,7 +89,7 @@ export class KeyboardInputLayer implements Layer, KeyboardInputSession {
   private readonly setShownOnGlasses: (shown: boolean) => void;
   private readonly onVisibilityChanged: (visibility: KeyboardInputVisibility) => void;
   private readonly sentHistory: string[];
-  private readonly sendTargets: VoiceSendTarget[];
+  private readonly sendTargets: KeyboardSendTarget[];
   private readonly defaultTargetIndex: number;
 
   constructor(options: KeyboardInputLayerOptions) {
@@ -170,12 +173,16 @@ export class KeyboardInputLayer implements Layer, KeyboardInputSession {
     this.onClosed();
   }
 
-  private sendToTarget(target: VoiceSendTarget): void {
+  private sendToTarget(target: KeyboardSendTarget): void {
     if (this.closed) return;
     const text = this.text.trim();
     // An empty message has nothing to deliver; the dialog stays up for the
     // phone to keep typing (the glasses row is drawn dim for the same reason).
     if (!text) return;
+    if (target.available && !target.available()) {
+      this.problem = "Draft retained. Reconnect, unlock and return to the original app before confirming.";
+      this.actions.requestRender(); return;
+    }
     const previous = this.sentHistory.indexOf(text);
     if (previous >= 0) this.sentHistory.splice(previous, 1);
     this.sentHistory.unshift(text);
@@ -200,7 +207,7 @@ export class KeyboardInputLayer implements Layer, KeyboardInputSession {
     this.menu.setItems(this.menuRows());
     paintInputDialog(image, {
       title: "Keyboard",
-      status: "Type on the phone",
+      status: this.problem || "Type on the phone",
       text: this.text || "(nothing typed yet)",
       menu: this.menu,
     });

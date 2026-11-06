@@ -9,6 +9,8 @@ export const EventSourceType = {
    * spatial selection) while ring input keeps the stock one.
    */
   TOUCH_EVENT_FROM_WATCH: 4,
+  /** Native neural-band input; no G2 firmware event uses this source. */
+  TOUCH_EVENT_FROM_BAND: 5,
 } as const;
 
 export const EventSourceTypeName: Record<number, string> = {
@@ -17,6 +19,7 @@ export const EventSourceTypeName: Record<number, string> = {
   2: "TOUCH_EVENT_FROM_RING",
   3: "TOUCH_EVENT_FROM_GLASSES_L",
   4: "TOUCH_EVENT_FROM_WATCH",
+  5: "TOUCH_EVENT_FROM_BAND",
 };
 
 /**

@@ -1,0 +1,107 @@
+--- a/app/src/main/java/dev/kb896/airgestures/Mapping.kt
++++ b/app/src/main/java/dev/kb896/airgestures/Mapping.kt
+@@ -5,6 +5,14 @@
+ 
+ /** What a gesture can do, as the bridge names it (see Actions.kt). */
+ enum class Action(val id: String, val label: String, val icon: Int) {
++    FACECLAW_TOGGLE("faceclaw.toggle", "Faceclaw: toggle glasses / phone mode", R.drawable.ic_hand),
++    FACECLAW_CLICK("faceclaw.click", "Faceclaw: select", R.drawable.ic_mouse_pointer_click),
++    FACECLAW_BACK("faceclaw.double-click", "Faceclaw: back", R.drawable.ic_undo_2),
++    FACECLAW_UP("faceclaw.swipe-up", "Faceclaw: up", R.drawable.ic_arrow_up),
++    FACECLAW_DOWN("faceclaw.swipe-down", "Faceclaw: down", R.drawable.ic_arrow_down),
++    FACECLAW_LEFT("faceclaw.swipe-left", "Faceclaw: left", R.drawable.ic_arrow_left),
++    FACECLAW_RIGHT("faceclaw.swipe-right", "Faceclaw: right", R.drawable.ic_arrow_right),
++    FACECLAW_KEYBOARD("faceclaw.keyboard", "Faceclaw: compose text", R.drawable.ic_pencil),
+     NONE("", "Nothing", R.drawable.ic_minus),
+ 
+     PLAY_PAUSE("media.play_pause", "Play or pause", R.drawable.ic_play),
+--- a/app/src/main/java/dev/kb896/airgestures/Actions.kt
++++ b/app/src/main/java/dev/kb896/airgestures/Actions.kt
+@@ -73,6 +73,7 @@
+      * which automation sends.
+      */
+     fun run(action: String, fromBand: Boolean = false, palm: String? = null, band: String? = null): String? {
++        if (action.startsWith("faceclaw.")) return FaceclawHost.dispatch(action)
+         when (action) {
+             "media.play_pause" -> mediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+             "media.next" -> mediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
+--- a/app/src/main/java/dev/kb896/airgestures/MetaSignIn.kt
++++ b/app/src/main/java/dev/kb896/airgestures/MetaSignIn.kt
+@@ -45,6 +45,9 @@
+     @SuppressLint("SetJavaScriptEnabled")
+     override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
++        if (android.app.Application.getProcessName() != "$packageName:band_enrollment") { finish(); return }
++        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
++        WebView.setWebContentsDebuggingEnabled(false)
+         window.decorView.setBackgroundColor(Cb.PAGE)
+         window.insetsController?.setSystemBarsAppearance(
+             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+--- a/app/src/main/java/dev/kb896/airgestures/UpdateCheck.kt
++++ b/app/src/main/java/dev/kb896/airgestures/UpdateCheck.kt
+@@ -28,21 +28,16 @@
+     private const val CHANNEL = "updates"
+     private const val NOTIFICATION_ID = 4711
+     const val EVERY_MS = 2L * 60 * 60 * 1000
+-    private const val API = "https://gitlab.com/api/v4/projects/86888806/releases?per_page=1"
+-    const val APK = "https://gitlab.com/896kb/air-gestures-android/-/releases/permalink/latest/downloads/air-gestures.apk"
++    private const val API = "https://api.github.com/repos/RimbyCarkey/faceclaw-air-gestures/releases/latest"
++    const val APK = "https://github.com/RimbyCarkey/faceclaw-air-gestures/releases/latest"
+     /** The 896 Store, and the site to get it from. */
+     const val STORE = "dev.kb896.store"
+-    const val STORE_SITE = "https://store.896.ro/"
++    const val STORE_SITE = "https://github.com/RimbyCarkey/faceclaw-air-gestures/releases"
+ 
+     data class Release(val tag: String, val notes: String)
+ 
+-    fun storeInstalled(context: Context) = runCatching { context.packageManager.getPackageInfo(STORE, 0) }.isSuccess
+-
+-    /** The store's page for this app, starting the update; a store too old for the link just opens. Null without the store. */
+-    fun inStore(context: Context): Intent? {
+-        val link = Intent(Intent.ACTION_VIEW, Uri.parse("kb896store://app/${context.packageName}?update=1")).setPackage(STORE)
+-        return if (link.resolveActivity(context.packageManager) != null) link else context.packageManager.getLaunchIntentForPackage(STORE)
+-    }
++    fun storeInstalled(context: Context) = false
++    fun inStore(context: Context): Intent? = null
+ 
+     fun version(context: Context): String =
+         context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0"
+@@ -85,10 +80,10 @@
+                 disconnect()
+             }
+         } ?: return null
+-        val first = org.json.JSONArray(body).optJSONObject(0) ?: return null
++        val first = org.json.JSONObject(body)
+         val tag = first.optString("tag_name").ifEmpty { return null }
+         // The notes are the changelog, then an install section the app doesn't need.
+-        return Release(tag, first.optString("description").substringBefore("## Install").trim())
++        return Release(tag, first.optString("body").substringBefore("## Install").trim())
+     }
+ 
+     /** "v0.3.9" against "0.3.8" or "0.3.9-dev": numerically, by the base version. */
+@@ -131,12 +126,12 @@
+         val version = release.tag.removePrefix("v")
+         val text = plain(release.notes).ifBlank { "Tap to update." }
+         val notification = Notification.Builder(context, CHANNEL)
+-            .setContentTitle("Air Gestures $version is out, you have ${version(context)}")
++            .setContentTitle("Faceclaw + Air Gestures $version is out, you have ${version(context)}")
+             .setContentText(text.lineSequence().firstOrNull().orEmpty())
+             .setStyle(Notification.BigTextStyle().bigText(text))
+             .setSmallIcon(R.drawable.ic_hand)
+             .setContentIntent(store ?: open(STORE_SITE, 2))
+-            .addAction(Notification.Action.Builder(null, "Update via 896 Store", store ?: open(STORE_SITE, 2)).build())
++            .addAction(Notification.Action.Builder(null, "Open fork releases", store ?: open(STORE_SITE, 2)).build())
+             .apply { if (store == null) addAction(Notification.Action.Builder(null, "Update", open(APK, 1)).build()) }
+             .setAutoCancel(true)
+             .build()
+--- a/app/src/main/java/dev/kb896/airgestures/MainActivity.kt
++++ b/app/src/main/java/dev/kb896/airgestures/MainActivity.kt
+@@ -141,7 +141,7 @@
+     }
+ 
+     /** The site's store button: the ink pill with the store's icon. */
+-    private fun storePill(onClick: () -> Unit) = pill("Update via 896 Store", onClick = onClick).first.apply {
++    private fun storePill(onClick: () -> Unit) = pill("Update via fork releases", onClick = onClick).first.apply {
+         background = NeuDrawable(context, 999f, fill = Cb.INK_900, solid = true, soft = false)
+         setTextColor(android.graphics.Color.WHITE)
+         val icon = context.getDrawable(R.drawable.store_896)!!.apply { setBounds(0, 0, dpi(18f), dpi(18f)) }

@@ -268,8 +268,9 @@ def faceclawVersionCode = {
 }()
 
 android {
-  compileSdkVersion 35
+  compileSdkVersion (System.getenv('FACECLAW_NEURAL_BAND') == '0' ? 35 : 36)
   buildToolsVersion "35"
+  sourceSets.androidTest.java.srcDir("$rootDir/../../tests/android-native-band")
   // ndkVersion ""
 
   sourceSets.main {
@@ -278,7 +279,8 @@ android {
   }
 
   defaultConfig {
-    minSdkVersion 24
+    testInstrumentationRunner "com.faceclaw.app.NativeBandInstrumentation"
+    minSdkVersion (System.getenv('FACECLAW_NEURAL_BAND') == '0' ? 24 : 33)
     targetSdkVersion 35
     ndk {
       // The NativeScript platform build.gradle has already added all four

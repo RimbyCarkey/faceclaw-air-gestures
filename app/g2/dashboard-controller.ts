@@ -1,3 +1,5 @@
+import { startNativeBand } from '../band/native';
+import { BAND_INPUTS, type BandInput } from '../band/input';
 import { startRemoteInput } from "../remote/service";
 import { acceptInput, resetRingInputFilter } from "../ui/input-monitor";
 import { Application, Dialogs, ImageSource } from "@nativescript/core";
@@ -245,6 +247,7 @@ function eventLabel(kind: string, eventType: number): string {
   if (kind === "even-ai") {
     return EvenAIStatusName[eventType] ?? `EVEN_AI_UNKNOWN_${eventType}`;
   }
+  if (kind === "band-gesture") return BAND_INPUTS[eventType] ?? `BAND_UNKNOWN_${eventType}`;
   if (kind === "watch-gesture") {
     return WatchGestureTypeName[eventType] ?? `WATCH_UNKNOWN_${eventType}`;
   }
@@ -495,6 +498,11 @@ class DashboardController {
     this.syncAssistantBridge();
     // The watch drives the same synthetic-input path as the phone UI's test
     // buttons, plus app/window/lock commands; it mirrors the state below.
+    startNativeBand({
+      ready: () => this.nativeBandReady(),
+      input: gesture => this.injectNativeBandInput(gesture),
+      keyboard: () => this.startKeyboardInput(true),
+    });
     startRemoteInput({
       ready: () => this.phase === "connected" || this.phase === "charging",
       locked: () => this.glassesLocked,
@@ -1353,13 +1361,23 @@ class DashboardController {
    * (the typed twin of the mic button's wakeword). Needs a display to draw
    * on and, like ring input, does nothing while the glasses are locked.
    */
-  startKeyboardInput(): void {
+  private nativeBandReady(): boolean {
+    return !this.glassesLocked && (this.phase === "connected" || this.phase === "charging");
+  }
+  async injectNativeBandInput(input: BandInput): Promise<void> {
+    const code = BAND_INPUTS.indexOf(input);
+    if (code < 0) return;
+    await this.handleInputEvent({ kind: 'band-gesture', containerName: '', eventType: code,
+      eventSource: EventSourceType.TOUCH_EVENT_FROM_BAND, systemExitReasonCode: 0, frameId: 0 });
+    if (input === 'long-press') await this.injectNativeBandInput('long-press-release');
+  }
+  startKeyboardInput(pinDestination = false): void {
     if (this.phase !== "connected" && this.phase !== "charging" && !this.isPreviewDisplayActive()) return;
     if (this.glassesLocked) {
       this.appendLog("keyboard input ignored while the glasses are locked");
       return;
     }
-    shell.startKeyboardInput();
+    shell.startKeyboardInput(pinDestination ? () => this.nativeBandReady() : undefined);
   }
 
   /** The open keyboard dialog, for the phone's typing panel (KeyboardInputViewModel). */

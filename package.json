@@ -34,7 +34,8 @@
     "lodash": "^4.18.1",
     "lz4js": "^0.2.0",
     "pako": "^2.1.0",
-    "upng-js": "^2.1.0"
+    "upng-js": "^2.1.0",
+    "@faceclaw/air-gestures": "file:native/air-gestures/plugin"
   },
   "devDependencies": {
     "@nativescript/android": "9.1.1",

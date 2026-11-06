@@ -1,3 +1,4 @@
+import { bandInputPayload } from '../../band/input';
 import { encodeShellScene } from "../../graphics/shell-scene";
 import { G2_LENS_HEIGHT, G2_LENS_WIDTH, GrayImage } from "../../graphics/image";
 import { singlePlane, type Plane } from "../../graphics/plane";
@@ -14,7 +15,7 @@ import {
   type InputEventPayload,
   type InputSource,
   isDirectionalInput,
-  isWatchInput,
+  isSpatialInput,
   makeInputEvent,
 } from "../gestures";
 import { Layer, LayerActions, LayerContext, LayerStack, noopLayerActions } from "../layers";
@@ -1009,7 +1010,7 @@ class Shell {
     // A visible window may paint a source-dependent indicator (see
     // lastInputEvent); when the source class flips (watch <-> ring/arms),
     // repaint it so the indicator follows the device now in use.
-    if (this.screenOn && previous && isWatchInput(previous) !== isWatchInput(event)) {
+    if (this.screenOn && previous && isSpatialInput(previous) !== isSpatialInput(event)) {
       this.foregroundWindow()?.requestRender();
     }
     // The stock lifecycle has already interpreted the physical double tap as
@@ -1222,7 +1223,7 @@ class Shell {
 
   /** Whether the most recent input came from the watch (see lastInputEvent). */
   lastInputWasWatch(): boolean {
-    return this.lastInput !== null && isWatchInput(this.lastInput);
+    return this.lastInput !== null && isSpatialInput(this.lastInput);
   }
 
   /** Whether a window is the current input target (foreground + focus in-window). */
@@ -1596,8 +1597,10 @@ class Shell {
    * dialog is up. The phone can keep the dialog off the glasses (see
    * KeyboardInputVisibility); that choice persists across dialogs.
    */
-  startKeyboardInput(): KeyboardInputSession | null {
-    if (this.activeKeyboardLayer) return this.activeKeyboardLayer;
+  startKeyboardInput(destinationAvailable?: () => boolean): KeyboardInputSession | null {
+    if (this.activeKeyboardLayer) return destinationAvailable ? null : this.activeKeyboardLayer;
+    const destination = this.foregroundWindow();
+    if (destinationAvailable && !destination?.receiveTextInput) return null;
     if (this.activeVoiceLayer || this.foregroundWindow()?.isVoiceCapturing?.()) return null;
     const storedVisibility = getStringSetting(KEYBOARD_INPUT_VISIBILITY_KEY, "both");
     const visibility: KeyboardInputVisibility =
@@ -1605,9 +1608,14 @@ class Shell {
     if (visibility !== "phone" && !this.screenOn) this.wake("sidebar");
     const assistantLayer = this.assistantLayer;
     const assistantSession = this.assistantSession;
-    let targets: VoiceSendTarget[];
+    let targets: import("./keyboard-input").KeyboardSendTarget[];
     let defaultIndex = 0;
-    if (assistantLayer && assistantSession) {
+    if (destinationAvailable && destination) {
+      targets = [{ id: "band-destination", label: `Confirm to ${destination.title || destination.appId} (may run action)`,
+        available: () => destinationAvailable() && this.foregroundWindow() === destination,
+        onSend: text => destination.receiveTextInput?.(text, { submit: false }),
+      }];
+    } else if (assistantLayer && assistantSession) {
       targets = [
         {
           id: "assistant",
@@ -2054,6 +2062,7 @@ export function rawInputEventToInputEvent(event: RawInputEvent): InputEvent {
 }
 
 function rawInputEventToPayload(event: RawInputEvent): InputEventPayload {
+  if (event.kind === "band-gesture") return bandInputPayload(event.eventType);
   if (event.kind === "sys-event") {
     if (event.eventType === OsEventTypeList.RING_PRESS_EVENT &&
         (event.eventSource === EventSourceType.TOUCH_EVENT_FORM_DUMMY_NULL ||

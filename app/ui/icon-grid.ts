@@ -6,7 +6,7 @@ import { slidingCoordinate } from "../graphics/menu-scroll-list";
 import { getDefaultSmallFont } from "../graphics/ui-fonts";
 import { truncateText } from "../graphics/textwrap";
 import { clamp } from "../util/numeric-util";
-import { isWatchInput, type InputEvent } from "./gestures";
+import { isSpatialInput, type InputEvent } from "./gestures";
 import type { LayerContext } from "./layers";
 import { drawListScrollbar, drawSelectionHighlight, scrollToKeepSelectionVisible } from "./menu";
 import { BOUNCE_FRACTION, MAX_BOUNCE, MENU_HIGHLIGHT_FILL, MENU_HIGHLIGHT_STROKE, type MenuBox } from "./menu-core";
@@ -188,7 +188,7 @@ export class IconGrid<T> {
    * in row mode.
    */
   onFocus(lastInput: InputEvent | null): void {
-    if (lastInput && isWatchInput(lastInput)) {
+    if (lastInput && isSpatialInput(lastInput)) {
       this.mode = "item";
       this.clampSelection(this.buildRows());
     } else {
@@ -226,7 +226,7 @@ export class IconGrid<T> {
   }
 
   async handleInput(event: InputEvent, ctx: LayerContext): Promise<void> {
-    if (isWatchInput(event)) {
+    if (isSpatialInput(event)) {
       await this.handleWatchInput(event, ctx);
     } else {
       await this.handleRingInput(event, ctx);

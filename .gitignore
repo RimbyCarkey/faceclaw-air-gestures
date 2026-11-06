@@ -76,3 +76,19 @@ apple-watch/build/
 apple-watch/Local.xcconfig
 App_Resources/iOS/watchapp/
 xcuserdata/
+
+# Native band integration outputs and private state
+native/air-gestures/build/
+native/air-gestures/.gradle/
+native/air-gestures/.kotlin/
+native/air-gestures/jniLibs/
+native/air-gestures/plugin/platforms/android/*.aar
+*.keystore
+*.jks
+.env
+.env.*
+owner.key
+owner.pending.key
+meta-session.bin
+.meta-session.bin.tmp
+air-gestures-band*.json

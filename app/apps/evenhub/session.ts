@@ -1639,7 +1639,7 @@ function luminance(r: number, g: number, b: number): number {
  * Input-device names in the extension API: the touchDown event's source, and
  * the `faceclawInputSource` field added to stock gesture events.
  */
-type ExtensionInputSource = "ring" | "left-touchpad" | "right-touchpad" | "watch";
+type ExtensionInputSource = "ring" | "left-touchpad" | "right-touchpad" | "watch" | "band";
 
 const INPUT_SOURCE_FIELD = "faceclawInputSource";
 
@@ -1653,6 +1653,8 @@ function extensionInputSource(source: InputSource): ExtensionInputSource {
       return "right-touchpad";
     case "watch":
       return "watch";
+    case "band":
+      return "band";
   }
 }
 
@@ -1667,6 +1669,7 @@ function gestureSource(source: InputSource): number {
       return 1;
     case "ring":
     case "watch":
+    case "band":
       return 2;
     case "left-arm":
       return 3;

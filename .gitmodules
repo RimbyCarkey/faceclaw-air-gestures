@@ -1,0 +1,3 @@
+[submodule "vendor/air-gestures"]
+	path = vendor/air-gestures
+	url = https://gitlab.com/896kb/air-gestures-android.git

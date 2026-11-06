@@ -1,4 +1,4 @@
-<GridLayout rows="auto,*,auto" maxHeight="280" xmlns="http://schemas.nativescript.org/tns.xsd"
+<GridLayout rows="auto,*,auto,auto" maxHeight="280" xmlns="http://schemas.nativescript.org/tns.xsd"
     class="system-name-modal keyboard-input-panel"
     visibility="{{ keyboardInputVisibility }}"
     horizontalAlignment="stretch"
@@ -31,6 +31,7 @@
         class="keyboard-input-hidden-hint"
         visibility="{{ keyboardInputGlassesOnlyVisibility }}"
         tap="{{ onKeyboardInputGlassesOnlyHintTap }}" />
+    <Label row="3" text="{{ keyboardInputProblem }}" textWrap="true" />
     <!-- One strip: at most two destinations (assistant, app) plus Discard. -->
     <FlexboxLayout row="2" flexWrap="nowrap" class="keyboard-input-buttons">
         <Button text="{{ keyboardInputPrimaryTargetLabel }}" tap="{{ onKeyboardInputPrimarySendTap }}" visibility="{{ keyboardInputPrimaryTargetVisibility }}" flexGrow="1" class="-primary" />

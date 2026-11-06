@@ -35,7 +35,7 @@ export class KeyboardInputViewModel extends Observable {
     if (session === this.session) return
     this.session = session
     this.text = ''
-    this.notifyPanel(['keyboardInputText', 'keyboardInputVisibility', 'keyboardInputPrimaryTargetLabel',
+    this.notifyPanel(['keyboardInputProblem', 'keyboardInputText', 'keyboardInputVisibility', 'keyboardInputPrimaryTargetLabel',
       'keyboardInputPrimaryTargetVisibility', 'keyboardInputSecondaryTargetLabel', 'keyboardInputSecondaryTargetVisibility',
       'keyboardInputHistoryOpacity'])
     this.notifyVisibilityMode()
@@ -48,6 +48,7 @@ export class KeyboardInputViewModel extends Observable {
       'keyboardInputFieldClass', 'keyboardInputGlassesOnlyVisibility'])
   }
   get keyboardInputVisibility(): 'visible' | 'collapse' { return this.session ? 'visible' : 'collapse' }
+  get keyboardInputProblem(): string { return this.session?.problem ?? '' }
   get keyboardInputText(): string { return this.text }
   set keyboardInputText(text: string) { this.text = text; this.session?.setText(text) }
   private targetLabel(index: number): string {
@@ -68,6 +69,7 @@ export class KeyboardInputViewModel extends Observable {
     if (!target) return
     this.session.setText(this.text)
     this.session.sendTo(target.id)
+    this.notifyPanel(['keyboardInputProblem'])
   }
   onKeyboardInputDiscardTap(): void { this.session?.discard() }
 

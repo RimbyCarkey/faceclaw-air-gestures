@@ -1,0 +1,51 @@
+name: Native band Android
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-band-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      FACECLAW_NEURAL_BAND: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install pinned Android and Rust prerequisites
+        run: |
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.1' 'ndk;30.0.16248370'
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
+          rustup toolchain install 1.99.1 --profile minimal
+          rustup target add --toolchain 1.99.1 aarch64-linux-android
+      - run: npm ci
+      - name: Check Air Gestures patches without changing its source
+        run: node scripts/prepare-air-gestures.cjs
+      - run: npm test
+      - run: node node_modules/typescript/bin/tsc --noEmit
+      - name: Build the pinned native band core
+        run: bash scripts/build-neural-band-rust.sh
+      - name: Build unified debug APK
+        run: npx --yes --package=nativescript@9.1.2 ns build android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: faceclaw-native-band-${{ github.sha }}
+          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

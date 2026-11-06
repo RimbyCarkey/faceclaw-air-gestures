@@ -39,7 +39,7 @@ import {
   GESTURE_DOUBLE_CLICK,
   GESTURE_LONG_PRESS,
   GESTURE_SCROLL,
-  isWatchInput,
+  isSpatialInput,
   type InputEvent,
 } from "../../ui/gestures";
 import { clamp } from "../../util/numeric-util";
@@ -382,7 +382,7 @@ function handlePlayingInput(window: MinesweeperWindow, event: InputEvent, frameI
   // The watch's swipes move the cell cursor in four directions; its scheme
   // has no row-select layer (as in the launcher), so any watch input drops
   // to cell selection first and its double-click pauses directly.
-  const watch = isWatchInput(event);
+  const watch = isSpatialInput(event);
   if (watch) window.selectMode = "column";
   const rowMode = window.selectMode === "row";
   switch (event.type) {

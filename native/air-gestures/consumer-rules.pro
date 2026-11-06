@@ -1,0 +1,3 @@
+-keep class dev.kb896.airgestures.Bridge { *; }
+-keep class dev.kb896.airgestures.FaceclawHost { public *; }
+-keep interface dev.kb896.airgestures.FaceclawHost$* { *; }

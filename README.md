@@ -1,3 +1,21 @@
+# Faceclaw + Air Gestures — native Neural Band fork
+
+A public Faceclaw fork building **one Android APK**, with Air Gestures kept as an
+independently pinned upstream codebase. All its native feature screens remain
+available, with explicit glasses/phone mode switching and a native band input
+source rather than the watch connector.
+
+**[Joint controls: setup, modes, gestures and handwriting](docs/JOINT-CONTROLS.md)**
+
+- [Build and update workflow](docs/NATIVE-BAND-DEVELOPMENT.md)
+- [Air Gestures integration layout](integrations/air-gestures/README.md)
+
+Status: integration preview; hardware validation and phone-free handwriting are
+unfinished. Upstream app-source changes are reviewed and tested before release.
+The original Faceclaw README and attribution follow below.
+
+---
+
 # Faceclaw - An unofficial user interface for the Even Realities G2 smart glasses
 
 This is an unofficial user interface for the Even Realities G2 smart glasses.

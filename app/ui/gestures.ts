@@ -6,7 +6,7 @@ import type { RingInput } from "../g2/ring-input";
  * components may treat with a richer scheme (see isWatchInput) — the ring's
  * semantics are never changed by it.
  */
-export type InputSource = "ring" | "left-arm" | "right-arm" | "watch";
+export type InputSource = "ring" | "left-arm" | "right-arm" | "watch" | "band";
 
 /** Fields shared by every input event, whatever its type. */
 export type BaseInputEvent = {
@@ -172,3 +172,9 @@ export const GESTURE_SHORT_THEN_LONG_PRESS = GESTURE_CLICK + GESTURE_LONG_PRESS;
 export function gestureHints(pairs: Array<[string, string]>): string {
   return pairs.map(([glyph, action]) => `${glyph} ${action}`).join("   ");
 }
+
+/** True for direct spatial controllers, preserving their distinct source identities. */
+export function isSpatialInput(event: InputEvent): boolean {
+  return 'source' in event && (event.source === 'watch' || event.source === 'band');
+}
+export function isBandInput(event: InputEvent): boolean { return 'source' in event && event.source === 'band'; }

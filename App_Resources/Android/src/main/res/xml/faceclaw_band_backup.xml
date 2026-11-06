@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <exclude domain="root" path="app_webview_band-enrollment/" />
+    <exclude domain="file" path="meta-session.bin" />
+    <exclude domain="file" path=".meta-session.bin.tmp" />
+    <exclude domain="file" path="band2/" />
+    <exclude domain="file" path="owner.key" />
+    <exclude domain="file" path="owner.pending.key" />
+    <exclude domain="file" path="band.json" />
+    <exclude domain="file" path="handwriting.active" />
+    <exclude domain="external" path="air-gestures-band.json" />
+    <exclude domain="external" path="owner.key" />
+    <exclude domain="external" path="band.json" />
+</full-backup-content>

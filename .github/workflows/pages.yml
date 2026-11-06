@@ -4,13 +4,6 @@ name: Deploy website
 # Settings > Pages > Source to be set to "GitHub Actions".
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'website/**'
-      - 'PRIVACY'
-      - 'scripts/sync-site.mjs'
-      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
