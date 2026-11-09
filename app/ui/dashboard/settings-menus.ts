@@ -23,7 +23,6 @@ import {
   type AsrModelId,
 } from "../../native/asr-model";
 import { TextViewerLayer } from "../../apps/files/text-viewer";
-import { IOS_PRIVACY_NOTICE } from "../../analytics/privacy-disclosure";
 import type { LayerContext } from "../layers";
 import { drawRightValueMenuItem, openModalMenu, submenuItem, type MenuItem } from "../menu";
 import { shell } from "../shell/shell";
@@ -55,6 +54,7 @@ import {
   dataCollectionSetting,
   distanceUnitSetting,
   glassesBatteryVisibilitySetting,
+  glassesModelName,
   phoneBatteryVisibilitySetting,
   ringBatteryVisibilitySetting,
   watchBatteryVisibilitySetting,
@@ -67,6 +67,7 @@ import {
   previewScalingSetting,
   phoneRotationSetting,
   ringConnectionModeSetting,
+  glassesTypeSetting,
   sonioxApiKeySetting,
   saveTranscribeAudioSetting,
   whisperServerApiKeySetting,
@@ -78,6 +79,7 @@ import {
   firmwareDebugFlagsSetting,
   lockScreenEnabledSetting,
   menuAnimationSetting,
+  newNotificationDisplaySetting,
   saveVoiceRecordingsSetting,
   showBleBandwidthSetting,
   suspendEvenHubWhenScreenOffSetting,
@@ -100,8 +102,12 @@ import {
 import { wearBridge } from "../../native/wear-bridge";
 import { openSettingsSubMenu, SettingsPanelLayer, type SettingsSection } from "./settings-panel";
 import { uiFontPickerMenuItem } from "../font-picker";
+import { NotificationFilterLayer } from "../notification-filter";
 import { compatibleModelDiscoveryMenuItem } from "../openai-compatible-model-picker";
 import { isVeniceApiBaseUrl } from "../../native/openai-chat";
+
+/** The Settings section the Notifications app's "Settings" menu item opens. */
+export const NOTIFICATIONS_SETTINGS_SECTION = "Notifications";
 
 /** The Settings app's master-detail panel (sections on the left, contents on the right). */
 export function createSettingsPanelLayer(): SettingsPanelLayer {
@@ -137,6 +143,14 @@ function settingsSections(): SettingsSection[] {
       get items() {
         return customizationItems();
       },
+    },
+    {
+      // Also opened from the Notifications app's menu (deep link by label).
+      label: NOTIFICATIONS_SETTINGS_SECTION,
+      items: [
+        enumSettingMenuItem(newNotificationDisplaySetting),
+        notificationFilterMenuItem(),
+      ],
     },
     {
       label: "Voice",
@@ -231,7 +245,7 @@ function settingsSections(): SettingsSection[] {
       items: [
         // Whether and how the phone opens its own BLE link to the R1 ring.
         // Applied at connect time.
-        enumSettingMenuItem(ringConnectionModeSetting),
+        ringConnectionMenuItem(),
         toggleSettingMenuItem(saveVoiceRecordingsSetting),
         toggleSettingMenuItem(firmwareDebugFlagsSetting),
         toggleSettingMenuItem(suspendEvenHubWhenScreenOffSetting),
@@ -244,11 +258,6 @@ function settingsSections(): SettingsSection[] {
       items: [
         // First chosen in the on-glasses onboarding (app/apps/onboarding/).
         enumSettingMenuItem(dataCollectionSetting),
-        ...(global.isIOS ? [{
-          label: "iOS / TestFlight privacy",
-          description: "Apple's beta reports are separate from Faceclaw statistics. Tap to read.",
-          onSelect: (ctx: LayerContext) => ctx.stack.push(new TextViewerLayer(IOS_PRIVACY_NOTICE, "iOS / TestFlight privacy")),
-        }] : []),
         bundledDocMenuItem("PRIVACY", "Privacy policy"),
       ],
     },
@@ -339,6 +348,17 @@ function customizationRows(): () => MenuItem[] {
   };
 }
 
+/** Notifications > Notification filter: per-app toggles for which notifications pop up. */
+function notificationFilterMenuItem(): MenuItem {
+  return submenuItem(
+    "Notification filter",
+    (ctx) => {
+      ctx.stack.push(new NotificationFilterLayer());
+    },
+    { description: "Choose which apps' new notifications pop up on the glasses. All of them still appear in the Notifications app." },
+  );
+}
+
 function autoBrightnessMenuItem(): MenuItem {
   return submenuItem(
     "Auto-brightness",
@@ -368,7 +388,8 @@ function batteryIndicatorsMenuItem(): MenuItem {
         enumSettingMenuItem(batteryDisplayModeSetting),
         enumSettingMenuItem(phoneBatteryVisibilitySetting),
         enumSettingMenuItem(watchBatteryVisibilitySetting),
-        enumSettingMenuItem(glassesBatteryVisibilitySetting),
+        // Named as the top bar names this indicator.
+        enumSettingMenuItem(glassesBatteryVisibilitySetting, { label: glassesModelName() }),
         enumSettingMenuItem(ringBatteryVisibilitySetting),
       ]);
     },
@@ -598,6 +619,24 @@ function readBundledDoc(fileName: string): string {
   } catch {
     return `(${fileName} is missing from this build)`;
   }
+}
+
+/**
+ * Developer > Ring connection: the setting, except with a RayNeo iO, which
+ * always takes the ring directly (effectiveRingConnectionMode): then a fixed,
+ * disabled "Direct" row, the stored choice kept for G2 glasses.
+ */
+function ringConnectionMenuItem(): MenuItem {
+  const item = enumSettingMenuItem(ringConnectionModeSetting);
+  const io = () => glassesTypeSetting.get() !== "g2";
+  return {
+    ...item,
+    disabled: io,
+    render: (args) => {
+      if (!io()) return item.render?.(args);
+      drawRightValueMenuItem(args.image, getDefaultSmallFont(), args.x, args.y, args.width, item.label, glassesTypeSetting.get() === "g1" ? "Direct (Even G1)" : "Direct (RayNeo iO)");
+    },
+  };
 }
 
 function renderWatchStatus(args: { image: GrayImage; x: number; y: number; width: number }): number {

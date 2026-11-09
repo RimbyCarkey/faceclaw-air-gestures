@@ -2,7 +2,6 @@ import { startRemoteInput } from "../remote/service"
 import type { KeyboardInputSession } from '../ui/shell/keyboard-input'
 import { acceptInput, resetRingInputFilter } from "../ui/input-monitor";
 import { bindIosNotifications, iosNotificationsChanged, onIosNotificationPopup, readActiveNotifications } from '../native/notification-icons.ios'
-import { shouldShowNotificationOnGlasses } from '../native/notification-sources'
 import { launcherEntries } from '../apps/launcher'
 import { discardZeroedEvenHubPackage, getInstalledEvenHubAppById, installedEvenHubPackageId, uninstallEvenHubPackage } from '../apps/evenhub/installed-apps'
 import { isInstalledPackagePresent } from '../apps/evenhub/updates'
@@ -23,6 +22,7 @@ import { weatherBridge } from '../native/weather'
 import { FaceclawCommunicatorBridge, resolveIosPeripherals, type CommunicatorState, type RawInputEvent } from '../native/faceclaw-communicator.ios'
 import { PreviewDisplayTarget, type DisplayTarget } from '../native/preview-display.ios'
 import { AncsClient, ANCS_FIRMWARE_VERSION } from './ancs-client'
+import { G1V0_IMAGE } from '../g1/firmware/g1v0-image'
 import { GlanceHost, type GlanceDisplay } from './glance-host'
 import { createLockScreenImage, LOCK_SCREEN_SURFACE_ID } from './lock-screen'
 import { OsEventTypeList } from './events'
@@ -53,7 +53,7 @@ import { onAnySettingChanged,
   previewColorSetting, lockScreenEnabledSetting, getBrightnessPreferences, getStringSettingById,
   nightscoutSiteUrlSetting, nightscoutApiTokenSetting, voiceProviderSetting, elevenLabsApiKeySetting,
   openAiApiKeySetting, sonioxApiKeySetting, whisperServerApiKeySetting, whisperServerLanguageSetting,
-  whisperServerModelSetting, whisperServerUrlSetting, ringConnectionModeSetting, saveTranscribeAudioSetting } from '../ui/dashboard-settings'
+  whisperServerModelSetting, whisperServerUrlSetting, ringConnectionModeSetting, saveTranscribeAudioSetting, glassesTypeSetting, shouldPopUpNewNotification } from '../ui/dashboard-settings'
 import { transcriptionKey, type VoiceProviderSelection } from '../native/cloud-stt-provider'
 import type { PhoneGesture } from '../phone-ui/phone-gestures'
 import { claimGlassesOnboardingAutoLaunch, ONBOARDING_APP_ID } from '../apps/onboarding/onboarding-progress'
@@ -215,7 +215,8 @@ export class IosPreviewController {
       requestShellRender: () => this.requestShellRender(),
       onWindowsChanged: () => { this.requestShellRender(); this.syncEvenHubPhoneUi(); this.wearRemote?.schedulePublish() },
       openNotificationsWindow: () =>
-        this.openInProcessAppInBackground(NOTIFICATIONS_WINDOW_ID, NOTIFICATIONS_SURFACE_ID, createNotificationsAppWindow),
+        this.openInProcessAppInBackground(NOTIFICATIONS_WINDOW_ID, NOTIFICATIONS_SURFACE_ID,
+          options => createNotificationsAppWindow(options, section => { void this.launchApp('settings', { section }) })),
       onSwitcherBarHeightChanged: () => {
         this.relayout()
         shell.foregroundWindow()?.requestRender()
@@ -247,7 +248,7 @@ export class IosPreviewController {
     shell.focusWindow(launcher.windowId)
     onIosNotificationPopup(key => {
       const notification = readActiveNotifications(128).find(n => n.key === key)
-      if (this.glassesLocked || !notification || !shouldShowNotificationOnGlasses(notification.packageName)) return
+      if (this.glassesLocked || !notification || !shouldPopUpNewNotification(notification.packageName)) return
       const woke = !shell.isScreenOn() && shell.wake('sidebar')
       shell.openNotificationModal(key, woke)
       this.requestShellRender()
@@ -272,7 +273,7 @@ export class IosPreviewController {
     // The header's EvenHub phone-UI button hides while that UI is showing.
     onPhoneShownChanged(() => this.syncEvenHubPhoneUi())
     registerSystemTools()
-    registerWindowTools({ apps: ALL_APPS.filter(app => !iosAppUnavailableReason(app.appId)),
+    registerWindowTools({ apps: () => ALL_APPS.filter(app => app.isSupported?.() !== false && !iosAppUnavailableReason(app.appId)),
       launchApp: id => this.launchApp(id), requestShellRender: () => this.requestShellRender() })
     registerNavigateTools(id => this.launchApp(id))
     registerRoamTools(id => this.launchApp(id))
@@ -280,7 +281,7 @@ export class IosPreviewController {
     iosVoiceInput.onSpeechEnd(() => this.syncContinuousCapture())
     for (const app of ALL_APPS) if (app.appId !== 'launcher' && !iosAppUnavailableReason(app.appId)) app.boot?.(this.buildAppContext(app))
     this.wearRemote = new WearRemote({
-      apps: ALL_APPS.filter(app => app.showInLauncher !== false && !iosAppUnavailableReason(app.appId)),
+      apps: () => ALL_APPS.filter(app => app.showInLauncher !== false && app.isSupported?.() !== false && !iosAppUnavailableReason(app.appId)),
       injectInput: kind => this.injectWatchInput(kind),
       launchApp: id => this.launchApp(id),
       // The watch's Connect/Disconnect are explicit user choices, like the phone's own buttons.
@@ -801,7 +802,7 @@ export class IosPreviewController {
         const display = this.display
         if (!display) return
         await display.configureSurface(id, { ...appViewportRect(heightMode, appId), zOrder: 0, transparency: 'opaque' })
-        await display.setSurfaceVisible(id, visible)
+        await display.setSurfaceVisible(id, typeof visible === 'function' ? visible() : visible)
       },
       setSurfaceVisible: (id, visible) => this.setWindowSurfaceVisible(id, visible),
       removeSurface: id => this.removeWindowSurface(id),
@@ -880,7 +881,7 @@ export class IosPreviewController {
         return
       }
       if (this.communicator) await this.closeCommunicator()
-      const communicator = new FaceclawCommunicatorBridge(identifiers)
+      const communicator = new FaceclawCommunicatorBridge({ ...identifiers, glassesType: glassesTypeSetting.get() })
       this.teardownPreviewDisplay()
       this.communicator = communicator
       this.wearDetectionRequested = false
@@ -984,6 +985,8 @@ export class IosPreviewController {
     // (or re-pairs / installs the custom firmware, which lift the suppression).
     if (isHaltedSessionPhase(state.phase)) suppressAutoReconnect()
     const phase: SessionPhase = state.phase === 'charging' ? 'connected' : isHaltedSessionPhase(state.phase) ? 'error' : state.phase
+    // The relay ends with the link, so a reconnected session has to ask for it again (syncNotifications).
+    if (phase !== 'connected' && this.notifications && this.notifications.state !== 'disconnected') this.notifications.stop()
     // Wear state is a per-transport snapshot: ask again on every new session.
     if (phase !== 'connected') this.wearDetectionRequested = false
     this.update(phase, state.status)
@@ -1025,6 +1028,11 @@ export class IosPreviewController {
     if (!notifications || this.state.phase !== 'connected') return
     if (!ancsCapable(this.state.capabilities)) {
       if (this.state.capabilities) notifications.stop(`Update glasses to Faceclaw firmware ${ANCS_FIRMWARE_VERSION} or newer for iPhone notifications.`)
+      return
+    }
+    // A G1 reports no revision that says so: its session knows from what the right arm answered.
+    if (!communicator.ancsRelayAvailable()) {
+      notifications.stop(`Update the glasses to Faceclaw's firmware ${G1V0_IMAGE.version} for iPhone notifications, then reconnect.`)
       return
     }
     if (notifications.state !== 'disconnected') return
