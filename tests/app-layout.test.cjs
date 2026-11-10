@@ -9,20 +9,21 @@ const js = (source) => ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;
 
-function geometry() {
+// The shell geometry over a G2's 640x480 screen, or `screen` (a RayNeo iO is 540x220).
+function geometry(screen = { width: 640, height: 480 }) {
   const settings = Object.fromEntries(Object.entries({
     displayLayoutSetting: 'band-middle', navigateDisplayLayoutSetting: 'global', terminalDisplayLayoutSetting: 'default',
     appSwitcherPositionSetting: 'left', uiDepthSetting: '0', statusBarPositionSetting: 'top',
     statusBarVisibilitySetting: 'always', windowBorderSetting: true,
   }).map(([name, value]) => [name, { value, get() { return this.value; } }]));
   const context = { exports: {}, require: (name) => {
-    if (name === '../../graphics/image') return { G2_LENS_WIDTH: 640, G2_LENS_HEIGHT: 480 };
+    if (name === '../../graphics/screen-size') return { screenWidth: () => screen.width, screenHeight: () => screen.height };
     assert.equal(name, '../dashboard-settings');
     return settings;
   } };
   vm.runInNewContext(js(read('app/ui/shell/geometry.ts')), context);
   const rect = (mode, appId) => ({ ...context.exports.appViewportRect(mode, appId) });
-  return { ...context.exports, settings, rect };
+  return { ...context.exports, settings, screen, rect };
 }
 
 const LAYOUTS = ['band-top', 'band-high', 'band-middle', 'band-low', 'band-bottom', 'tall', 'fullscreen'];
@@ -263,6 +264,78 @@ test('an immersive app fills the panel without chrome rows, frame or depth, in a
   }
 });
 
+test('on a RayNeo iO\'s 540x220 screen windows take every row under the bar, beside the strip or over the row', () => {
+  const g = geometry({ width: 540, height: 220 });
+  const panel = { x: 0, y: 0, width: 540, height: 220 };
+  // A band is the whole screen's height, so every band position is the same.
+  for (const layout of LAYOUTS) {
+    g.settings.displayLayoutSetting.value = layout;
+    g.settings.appSwitcherPositionSetting.value = 'left';
+    assert.equal(g.minWindowHeight(), 220);
+    assert.equal(g.minWindowTop(), 0);
+    for (const mode of ['min', 'medium', 'max']) assert.deepEqual(g.rect(mode), { x: 64, y: 28, width: 476, height: 192 }, layout);
+    assert.deepEqual({ ...g.switcherRect('min') }, { x: 0, y: 0, width: 64, height: 220 });
+    g.settings.appSwitcherPositionSetting.value = 'right';
+    assert.deepEqual(g.rect('min'), { x: 0, y: 28, width: 476, height: 192 });
+    assert.deepEqual({ ...g.switcherRect('min') }, { x: 476, y: 0, width: 64, height: 220 });
+  }
+  assert.equal(g.isOnSwitcherEdge(500, 10, 'min'), true);
+  assert.equal(g.screenCenterInViewportX(), 270);
+  // A bottom row: the window centred above it, its sides room for the deepest shift.
+  g.settings.appSwitcherPositionSetting.value = 'bottom';
+  g.settings.displayLayoutSetting.value = 'band-middle';
+  assert.deepEqual(g.rect('min'), { x: 32, y: 28, width: 476, height: 156 });
+  assert.deepEqual({ ...g.switcherRect('min') }, { x: 32, y: 184, width: 476, height: 36 });
+  g.settings.displayLayoutSetting.value = 'fullscreen';
+  assert.deepEqual(g.rect('min'), { x: 0, y: 28, width: 540, height: 156 });
+  // The phone mirror shows the whole screen, at its 27:11.
+  g.settings.displayLayoutSetting.value = 'band-middle';
+  for (const position of ['left', 'bottom', 'popup']) {
+    g.settings.appSwitcherPositionSetting.value = position;
+    assert.deepEqual({ ...g.phonePreviewRect({ ...g.usedScreenRect('min') }) }, panel, position);
+  }
+  // Every layout stays on the screen.
+  g.settings.uiDepthSetting.value = '62';
+  for (const switcher of ['left', 'right', 'bottom', 'popup']) {
+    g.settings.appSwitcherPositionSetting.value = switcher;
+    for (const statusBar of ['top', 'bottom']) {
+      g.settings.statusBarPositionSetting.value = statusBar;
+      for (const layout of LAYOUTS) {
+        g.settings.displayLayoutSetting.value = layout;
+        for (const mode of ['min', 'medium', 'max']) {
+          const rect = g.rect(mode), row = g.switcherRect(mode);
+          const where = `${switcher} ${statusBar} ${layout} ${mode}`;
+          assert.ok(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= 540 && rect.y + rect.height <= 220, where);
+          assert.ok(row.y >= 0 && row.y + row.height <= 220, where);
+          if (g.windowFramed()) assert.ok(rect.x - 1 - 31 >= 0 && rect.x + rect.width + 31 < 540, where);
+        }
+      }
+    }
+  }
+  // The G2's band is unchanged.
+  assert.equal(geometry().minWindowHeight(), 288);
+});
+
+test('on a RayNeo iO the chrome paints the screen\'s size, its strip and row within it', () => {
+  for (const position of ['left', 'right', 'bottom', 'popup']) {
+    const g = geometry({ width: 540, height: 220 });
+    g.settings.appSwitcherPositionSetting.value = position;
+    const { chrome, state } = chromeLayer(g, { windows: 3, notifications: 2, phoneBattery: 80 });
+    state.focus = 'sidebar';
+    const image = chrome.paint();
+    assert.deepEqual([image.width, image.height], [540, 220], position);
+    const parts = chrome.paintParts();
+    assert.ok(parts.length > 0, position);
+    for (const part of parts) {
+      assert.ok(part.x >= 0 && part.y >= 0 && part.x + part.image.width <= 540 && part.y + part.image.height <= 220,
+        `${position} part ${part.shellKey} at ${[part.x, part.y, part.image.width, part.image.height]}`);
+    }
+    // And it draws something there.
+    const lit = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (image.pixels[y * 540 + x]) return true; return false; };
+    assert.ok(lit(0, 0, 540, 220), position);
+  }
+});
+
 test('the phone mirror zooms to the area the shell uses, centred at the panel\'s 4:3', () => {
   const g = geometry();
   const preview = (mode, appId) => {
@@ -356,8 +429,9 @@ const shellScene = require('../.test-build/app/graphics/shell-scene.js');
 const displayList = require('../.test-build/app/graphics/display-list.js');
 const notificationTypes = require('../.test-build/app/native/notification-types.js');
 const ICON = notificationTypes.NOTIFICATION_ICON_SIZE;
-function chromeLayer(g, { notifications = 0, phoneBattery = null, windows = 1, trayIcons = [] } = {}) {
-  const font = { lineHeight: 12, ascent: 10, measureText: (text) => text.length * 4,
+function chromeLayer(g, { notifications = 0, phoneBattery = null, windows = 1, trayIcons = [], glassesModel = 'G2' } = {}) {
+  const measuredText = [];
+  const font = { lineHeight: 12, ascent: 10, measureText: (text) => { measuredText.push(text); return text.length * 4; },
     drawText: (image, x, y, text, value) => { for (let i = 0; i < text.length; i++) image.fillRect(x + i * 4, y + 2, 2, 6, value); } };
   let nextKey = 100;
   const requested = [];
@@ -378,7 +452,7 @@ function chromeLayer(g, { notifications = 0, phoneBattery = null, windows = 1, t
     '../../native/phone-battery': { readPhoneBatteryState: () => ({ battery: phoneBattery, charging: false }) },
     '../../util/render-freshness': { renderPassAllowsStaleData: () => false },
     '../dashboard-settings': { batteryDisplayModeSetting: { get: () => 'icon' }, phoneBatteryVisibilitySetting: settings,
-      batteryIndicatorVisible: () => true },
+      glassesBatteryVisibilitySetting: settings, glassesModelName: () => glassesModel, batteryIndicatorVisible: () => true },
     '../clock-format': { formatClockDate: () => 'Thu Oct 2', formatClockTime: () => '9:41' },
     '../layers': { LayerStack: { allocateShellKey: () => nextKey++ } },
     // As in menu.ts.
@@ -396,10 +470,18 @@ function chromeLayer(g, { notifications = 0, phoneBattery = null, windows = 1, t
   };
   let heightChanges = 0;
   const chrome = new context.exports.ShellChromeLayer(() => state, () => heightChanges++);
-  return { chrome, state, requested, planBottomBar: context.exports.planBottomBar, heightChanges: () => heightChanges };
+  return { chrome, state, requested, measuredText, planBottomBar: context.exports.planBottomBar, heightChanges: () => heightChanges };
 }
 const notification = (key) => ({ kind: 'notification', key });
 const keysOf = (items) => Array.from(items, (item) => item.key);
+
+test('the top bar labels the glasses battery with the paired model', () => {
+  const { chrome, state, measuredText } = chromeLayer(geometry(), { glassesModel: 'G1' });
+  state.battery.headset = 72;
+  chrome.paintParts();
+  assert.ok(measuredText.includes('G1'));
+  assert.ok(!measuredText.includes('G2'));
+});
 
 test('a bottom app switcher frames the foreground window\'s content in a rounded border', () => {
   const g = geometry();
@@ -911,7 +993,7 @@ test('Terminal resize keeps the view identity, negotiates its grid and skips pos
     client: { stop: () => calls.push('stop'), setViewport: (...size) => calls.push(size) },
   };
   const resize = resizeHandler('app/apps/terminal/terminal-app.worker.ts', {
-    windows: new Map([['test', window]]), clearTimeout: (timer) => calls.push(timer),
+    windows: new Map([['test', window]]), pendingHeightChanges: new Map(), clearTimeout: (timer) => calls.push(timer),
     TerminalEmulator: class { constructor(cols, rows) { this.cols = cols; this.rows = rows; } },
     reconnectView: (view) => { assert.equal(view, window); calls.push('reconnect'); },
     scheduleRender: () => calls.push('paint'),
