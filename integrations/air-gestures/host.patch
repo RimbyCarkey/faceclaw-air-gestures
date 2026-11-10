@@ -107,7 +107,7 @@
          val icon = context.getDrawable(R.drawable.store_896)!!.apply { setBounds(0, 0, dpi(18f), dpi(18f)) }
 --- a/app/src/main/java/dev/kb896/airgestures/Prefs.kt
 +++ b/app/src/main/java/dev/kb896/airgestures/Prefs.kt
-@@ -99,7 +99,9 @@
+@@ -99,7 +99,17 @@
       * the profiles this band uses, or [all] of them (the screens' reports, which go by the list's indexes).
       */
      fun profilesJson(all: Boolean = false): String = Mappings.profilesJson(Mappings.Input(
@@ -115,6 +115,27 @@
 +        (if (all) Profiles.load(context) else Bands.profiles(context, slot)).let { list ->
 +            if (!all && FaceclawHost.glassesMode(context)) list.copy(apps = emptyMap()) else list
 +        },
-         Profiles.band(context),
+-        Profiles.band(context),
++        Profiles.band(context).let { controls ->
++            // The global Draw control takes precedence over the glasses profile's mode toggle.
++            if (!all && FaceclawHost.glassesMode(context) &&
++                controls[Builtin.DRAW]?.gesture == Gesture.INDEX_HOLD) {
++                controls.with(Builtin.DRAW, null)
++            } else {
++                controls
++            }
++        },
          calls(),
          Profiles.sharedDrawings(context),
+--- a/app/src/main/java/dev/kb896/airgestures/Bands.kt
++++ b/app/src/main/java/dev/kb896/airgestures/Bands.kt
+@@ -184,4 +184,9 @@
+     fun pick(context: Context, slot: Int, id: String) {
++        val selected = slot == selected(context)
++        val previous = if (selected) profiles(context, slot).picked else null
+         if (slot == 0) Profiles.update(context) { it.picking(id) }
+         else if (Profiles.load(context).profile(id) != null) prefs(context).edit().putString(key(slot, PICKED), id).apply()
++        if (previous != null) {
++            FaceclawHost.getInstance(context).profilePicked(previous, profiles(context, slot).picked)
++        }
+     }

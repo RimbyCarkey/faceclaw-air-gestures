@@ -23,7 +23,9 @@ use the watch remote, a TCP connector, or Android automation broadcasts.
    account sessions are excluded from Android backups.
 4. Tap **Toggle glasses / phone mode** on the Band tab or the band settings page
    to choose where the band controls go. The Band tab shows the current mode,
-   including changes made with the band gesture.
+   including changes made with the band gesture. Selecting **Faceclaw glasses**
+   in Air Gestures also enters Glasses mode. Selecting a phone profile returns
+   to Phone mode and keeps that profile selected.
 
 ## Glasses mode
 
@@ -41,6 +43,9 @@ resume unchanged in phone mode.
 | Swipe up/down/left/right | Navigate in that direction |
 | Index double tap | Open a draft for the current app, if it accepts text |
 | Index pinch hold | Toggle back to phone mode |
+
+If the global Draw control uses index hold, Glasses mode temporarily frees that
+gesture for the mode toggle. Phone mode restores the saved Draw binding.
 
 Native glasses inputs are ignored when G2 is disconnected or locked. The native
 mode-switch action still works independently of the G2 connection, so you can

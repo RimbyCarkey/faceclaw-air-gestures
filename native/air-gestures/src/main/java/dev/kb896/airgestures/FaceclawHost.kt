@@ -39,6 +39,16 @@ class FaceclawHost private constructor(private val context: Context) {
         main.post { listener?.onInput("mode-changed") }
     }
 
+    /** A profile picked in Air Gestures or by the band's profile controls. */
+    fun profilePicked(previous: String, current: String) {
+        val enabled = current == "faceclaw.native"
+        if (enabled == isGlassesMode()) return
+        val edit = prefs.edit().putBoolean("glasses", enabled)
+        if (enabled && previous != "faceclaw.native") edit.putString("phoneProfile", previous)
+        edit.apply()
+        main.post { listener?.onInput("mode-changed") }
+    }
+
     fun isRunning() = BandService.instance != null
     fun stop() { BandService.stop(context) }
     fun selectFaceclawProfile() {

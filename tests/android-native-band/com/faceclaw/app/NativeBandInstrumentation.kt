@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityNodeInfo
 import android.webkit.CookieManager
+import dev.kb896.airgestures.Bands
 import dev.kb896.airgestures.Actions
 import dev.kb896.airgestures.Bridge
 import dev.kb896.airgestures.FaceclawHost
@@ -28,18 +29,31 @@ class NativeBandInstrumentation : Instrumentation() {
    lateinit var host: FaceclawHost
    val phone = Profiles.load(targetContext).picked
    Profiles.update(targetContext) { it.copy(apps = it.apps + ("dev.fixture.phone" to phone)) }
+   val phoneDraw = JSONObject(Prefs(targetContext).profilesJson()).getJSONObject("band").getJSONObject("draw")
+   check(phoneDraw.getString("gesture") == "index_hold")
    val originalMap = Profiles.load(targetContext).profiles.first { it.id == phone }.map
    runOnMainSync { host = FaceclawHost.getInstance(targetContext); host.setGlassesMode(true) }
    check(host.isGlassesMode()); check(Profiles.load(targetContext).picked == "faceclaw.native")
    check(JSONObject(Prefs(targetContext).profilesJson()).getJSONObject("apps").length() == 0)
+   check(JSONObject(Prefs(targetContext).profilesJson()).getJSONObject("band").isNull("draw"))
    check(Profiles.load(targetContext).apps["dev.fixture.phone"] == phone)
    runOnMainSync { check(Actions(targetContext).run("faceclaw.toggle") == null) }
    SystemClock.sleep(200)
    check(!host.isGlassesMode()); check(Profiles.load(targetContext).picked == phone)
    check(JSONObject(Prefs(targetContext).profilesJson()).getJSONObject("apps").has("dev.fixture.phone"))
+   check(JSONObject(Prefs(targetContext).profilesJson()).getJSONObject("band").getJSONObject("draw").toString() == phoneDraw.toString())
+   results += "PASS: index hold is released from Draw in glasses mode and restored in phone mode"
    results += "PASS: glasses mode suppresses automatic phone-profile takeover without losing its associations"
    check(Profiles.load(targetContext).profiles.first { it.id == phone }.map == originalMap)
    results += "PASS: native toggle restores the original phone profile without overwriting mappings"
+   runOnMainSync {
+    val slot = Bands.selected(targetContext)
+    Bands.pick(targetContext, slot, "faceclaw.native")
+    check(host.isGlassesMode())
+    Bands.pick(targetContext, slot, phone)
+    check(!host.isGlassesMode())
+   }
+   results += "PASS: Air Gestures profile picks synchronize Faceclaw mode in both directions"
    val received = CountDownLatch(1)
    var value = ""
    runOnMainSync {
