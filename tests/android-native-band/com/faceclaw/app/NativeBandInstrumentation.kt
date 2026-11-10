@@ -71,6 +71,14 @@ class NativeBandInstrumentation : Instrumentation() {
    click("Toggle glasses / phone mode"); awaitText("Phone mode · Air Gestures controls")
    results += "PASS: Band tab beside Watch provides independent live mode controls"
    click("Band settings & Air Gestures"); awaitText("Native Neural Band controls")
+   runOnMainSync { Bands.pick(targetContext, Bands.selected(targetContext), "faceclaw.native") }
+   awaitText("Glasses mode enabled.")
+   runOnMainSync { check(Actions(targetContext).run("faceclaw.swipe-down") == null) }
+   awaitText("swipe-down: received → preview")
+   awaitText("swipe-down: shell", "swipe-down: window", "swipe-down: no UI change")
+   runOnMainSync { check(Actions(targetContext).run("faceclaw.toggle") == null) }
+   awaitText("Phone mode restored.")
+   results += "PASS: native Band input reaches the preview shell and settings show live mode changes"
    click("Toggle glasses / phone mode"); awaitText("Glasses mode enabled.")
    click("Toggle glasses / phone mode"); awaitText("Phone mode restored.")
    click("Air Gestures · all features"); awaitText("Gestures")
@@ -99,19 +107,19 @@ class NativeBandInstrumentation : Instrumentation() {
 
     private fun find(node: AccessibilityNodeInfo?, text: String): AccessibilityNodeInfo? {
         if (node == null) return null
-        if (node.text?.toString()?.equals(text, ignoreCase = true) == true ||
+        if (node.text?.lineSequence()?.any { it.equals(text, ignoreCase = true) } == true ||
             node.contentDescription?.toString()?.equals(text, ignoreCase = true) == true) return node
         for (index in 0 until node.childCount) find(node.getChild(index), text)?.let { return it }
         return null
     }
 
-    private fun awaitText(text: String) {
+    private fun awaitText(vararg text: String) {
         val until = SystemClock.uptimeMillis() + 15000
         while (SystemClock.uptimeMillis() < until) {
-            if (find(uiAutomation.rootInActiveWindow, text) != null) return
+            if (text.any { find(uiAutomation.rootInActiveWindow, it) != null }) return
             SystemClock.sleep(100)
         }
-        error("Screen text not found: $text")
+        error("Screen text not found: ${text.joinToString()}")
     }
 
     private fun awaitAbsent(text: String) {

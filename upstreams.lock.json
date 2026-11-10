@@ -1,8 +1,8 @@
 {
   "faceclaw": {
     "repository": "https://github.com/jimrandomh/faceclaw.git",
-    "commit": "6df52021c8e6c8fd843bc8d5652851e8c0fc6ab8",
-    "release": "0.8.6"
+    "commit": "70ec2a0d6afd92e8185234e57ab013fcb596bf4d",
+    "release": "0.9.0"
   },
   "air_gestures": {
     "repository": "https://gitlab.com/896kb/air-gestures-android.git",

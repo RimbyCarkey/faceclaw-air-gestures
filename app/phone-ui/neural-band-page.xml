@@ -1,13 +1,16 @@
-<Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="navigatingTo">
+<Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="navigatingTo" navigatingFrom="navigatingFrom">
 <ActionBar title="Neural Band"><NavigationButton text="Back" tap="back" android.systemIcon="ic_menu_back" /></ActionBar>
 <ScrollView><StackLayout class="p-20">
 <Label text="Native Neural Band controls" fontSize="24" textWrap="true" />
 <Button text="Air Gestures · all features" tap="{{ manage }}" />
 <Button text="Enrollment, import and export" tap="{{ setup }}" />
 <Button text="Toggle glasses / phone mode" tap="{{ toggle }}" />
+<Label text="{{ mode }}" textWrap="true" />
 <Label text="{{ message }}" textWrap="true" />
+<Label text="Recent Faceclaw inputs" fontWeight="bold" />
+<Label text="{{ trace }}" textWrap="true" />
 <Label text="Glasses mode uses a dedicated Faceclaw profile and native band input. Phone mode restores your previous Air Gestures profile. All phone controls, profiles, handwriting, practice, drawings and firmware screens remain in the band manager." textWrap="true" />
 <Label text="In glasses mode, hold index pinch to return to phone mode. In your phone profile, assign Faceclaw: toggle glasses / phone mode to a gesture you choose, so you can switch back without touching the phone." textWrap="true" />
-<Label text="Connect your band in Air Gestures and G2 in Faceclaw. Index tap selects, middle tap goes back, swipes navigate, and index double tap opens a pinned draft. Review text and explicitly confirm delivery; delivery can run an action in the original app." textWrap="true" />
-<Label text="Meta sign-in has isolated cookies. Owner keys and account sessions are excluded from backup. Handwriting can edit the focused phone field through Air Gestures accessibility; glasses-only handwriting capture remains unfinished. Physical mode switching has not been verified on hardware." textWrap="true" />
+<Label text="Connect your band in Air Gestures. Open Preview Only or connect your glasses in Faceclaw. Index tap selects, middle tap goes back, swipes navigate, and index double tap opens a pinned draft. Review text and explicitly confirm delivery; delivery can run an action in the original app." textWrap="true" />
+<Label text="Meta sign-in has isolated cookies. Owner keys and account sessions are excluded from backup. Handwriting can edit the focused phone field through Air Gestures accessibility; glasses-only handwriting capture remains unfinished." textWrap="true" />
 </StackLayout></ScrollView></Page>

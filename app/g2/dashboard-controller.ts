@@ -1,4 +1,4 @@
-import { startNativeBand } from '../band/native';
+import { recordBandTrace, startNativeBand } from '../band/native';
 import { BAND_INPUTS, type BandInput } from '../band/input';
 import { startRemoteInput } from "../remote/service";
 import { acceptInput, resetRingInputFilter } from "../ui/input-monitor";
@@ -500,7 +500,7 @@ class DashboardController {
     // The watch drives the same synthetic-input path as the phone UI's test
     // buttons, plus app/window/lock commands; it mirrors the state below.
     startNativeBand({
-      ready: () => this.nativeBandReady(),
+      target: () => this.nativeBandTarget(),
       input: gesture => this.injectNativeBandInput(gesture),
       keyboard: () => this.startKeyboardInput(true),
     });
@@ -1397,8 +1397,10 @@ class DashboardController {
    * (the typed twin of the mic button's wakeword). Needs a display to draw
    * on and, like ring input, does nothing while the glasses are locked.
    */
-  private nativeBandReady(): boolean {
-    return !this.glassesLocked && (this.phase === "connected" || this.phase === "charging");
+  private nativeBandTarget(): 'preview' | 'glasses' | null {
+    if (this.glassesLocked) return null;
+    if (this.isPreviewDisplayActive()) return 'preview';
+    return this.phase === 'connected' || this.phase === 'charging' ? 'glasses' : null;
   }
   async injectNativeBandInput(input: BandInput): Promise<void> {
     const code = BAND_INPUTS.indexOf(input);
@@ -1413,7 +1415,7 @@ class DashboardController {
       this.appendLog("keyboard input ignored while the glasses are locked");
       return;
     }
-    shell.startKeyboardInput(pinDestination ? () => this.nativeBandReady() : undefined);
+    shell.startKeyboardInput(pinDestination ? () => this.nativeBandTarget() !== null : undefined);
   }
 
   /** The open keyboard dialog, for the phone's typing panel (KeyboardInputViewModel). */
@@ -2449,7 +2451,10 @@ class DashboardController {
     let frameOwned = false;
     try {
       const inputEvent = rawInputEventToInputEvent(event);
-      if (!acceptInput(inputEvent)) return;
+      if (!acceptInput(inputEvent)) {
+        if (event.kind === 'band-gesture') recordBandTrace(`${inputEvent.type}: filtered by input settings`);
+        return;
+      }
       // The gesture, plus which app is on screen and whether input goes to it,
       // the sidebar, or a shell overlay. Java only knows the raw event codes,
       // and without the target the export says what was pressed but not who
@@ -2526,6 +2531,10 @@ class DashboardController {
         outcome = { ...outcome, shell: true };
       }
 
+      if (event.kind === 'band-gesture') {
+        const destination = outcome.window ? 'window' : outcome.shell ? 'shell' : 'no UI change';
+        recordBandTrace(`${inputEvent.type}: ${destination}`);
+      }
       if (event.kind === "watch-gesture") {
         this.appendLog(`watch-gesture ${eventLabel(event.kind, event.eventType)}`);
       }

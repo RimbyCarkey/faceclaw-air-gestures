@@ -47,7 +47,9 @@ resume unchanged in phone mode.
 If the global Draw control uses index hold, Glasses mode temporarily frees that
 gesture for the mode toggle. Phone mode restores the saved Draw binding.
 
-Native glasses inputs are ignored when G2 is disconnected or locked. The native
+Band gestures also control the phone display in Preview Only. Open **Band settings & Air Gestures** to see recent gesture routing and shell results. The trace stays in memory.
+
+Native input requires an active preview or unlocked glasses. The native
 mode-switch action still works independently of the G2 connection, so you can
 return to phone controls without reconnecting the glasses. Re-selecting the profile
 does not overwrite your custom Faceclaw glasses mappings.

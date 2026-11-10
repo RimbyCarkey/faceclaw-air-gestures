@@ -92,7 +92,7 @@ test('choosing glasses selects exactly one, and the accessories are stored', () 
   const { state, loadPage } = fixture();
   const { OnboardingDevicesViewModel } = loadPage('onboarding-devices-view-model');
   const model = new OnboardingDevicesViewModel();
-  assert.equal(model.glassesOptions.map(option => option.choice).join(), 'preview,g1,g2,rayneo-io');
+  assert.equal(model.glassesOptions.map(option => option.choice).join(), 'preview,g1,g2');
 
   // Nothing is chosen until you choose, even with a stored glasses type, and Next waits for it.
   assert.equal(selected(model), '');
@@ -100,9 +100,9 @@ test('choosing glasses selects exactly one, and the accessories are stored', () 
   model.onNextTap();
   assert.equal(state.navigations.length, 0);
 
-  tap(model, 'rayneo-io');
-  assert.equal(state.glasses, 'rayneo-io');
-  assert.equal(selected(model), 'rayneo-io');
+  tap(model, 'g1');
+  assert.equal(state.glasses, 'g1');
+  assert.equal(selected(model), 'g1');
   assert.equal(model.nextEnabled, true);
 
   assert.equal(model.hasRing, false);
@@ -113,17 +113,16 @@ test('choosing glasses selects exactly one, and the accessories are stored', () 
   assert.equal(new OnboardingDevicesViewModel().hasRing, true);
 });
 
-test('the watch follows the platform, and iOS can\'t choose a RayNeo iO', () => {
+test('the watch follows the platform and RayNeo iO is hidden in this release', () => {
   const android = fixture();
   const onAndroid = new (android.loadPage('onboarding-devices-view-model').OnboardingDevicesViewModel)();
   assert.equal(onAndroid.watchLabel, 'Wear OS watch');
-  assert.equal(rowFor(onAndroid, 'rayneo-io').noteVisibility, 'collapse');
+  assert.equal(rowFor(onAndroid, 'rayneo-io'), undefined);
 
   const ios = fixture({ ios: true });
   const onIos = new (ios.loadPage('onboarding-devices-view-model').OnboardingDevicesViewModel)();
   assert.equal(onIos.watchLabel, 'Apple Watch');
-  assert.equal(rowFor(onIos, 'rayneo-io').noteVisibility, 'visible');
-  tap(onIos, 'rayneo-io');
+  assert.equal(rowFor(onIos, 'rayneo-io'), undefined);
   assert.equal(ios.state.glasses, 'g2');
   assert.equal(selected(onIos), '');
   assert.equal(onIos.nextEnabled, false);

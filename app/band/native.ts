@@ -14,18 +14,47 @@ const modeListeners = new Set<() => void>();
 export function subscribeBandMode(changed: () => void): () => void {
   modeListeners.add(changed); changed(); return () => modeListeners.delete(changed);
 }
+const traceListeners = new Set<(trace: string) => void>();
+const recentTrace: string[] = [];
+
+export function recordBandTrace(message: string): void {
+  recentTrace.push(message);
+  if (recentTrace.length > 8) recentTrace.shift();
+  const trace = recentTrace.join('\n');
+  traceListeners.forEach(listener => listener(trace));
+}
+
+export function subscribeBandTrace(listener: (trace: string) => void): () => void {
+  traceListeners.add(listener);
+  listener(recentTrace.join('\n'));
+  return () => traceListeners.delete(listener);
+}
+
 let listener: any;
-export function startNativeBand(host: { ready(): boolean; input(value: BandInput): Promise<void>; keyboard(): void }): void {
+export function startNativeBand(host: { target(): 'preview' | 'glasses' | null; input(value: BandInput): Promise<void>; keyboard(): void }): void {
   if (!nativeBandAvailable() || listener) return;
   let busy = false, lastAt = -Infinity;
   const allowed = new Set(['click', 'double-click', 'swipe-up', 'swipe-down', 'swipe-left', 'swipe-right', 'long-press', 'short-then-long-press']);
   listener = new dev.kb896.airgestures.FaceclawHost.Listener({ onInput: (raw: string) => {
     const input = String(raw);
     if (input === "mode-changed") { modeListeners.forEach(fn => fn()); return; }
-    if (!host.ready() || busy || Date.now() - lastAt < 80 || (input !== 'keyboard' && !allowed.has(input))) return;
+    if (input !== 'keyboard' && !allowed.has(input)) return;
+    const target = host.target();
+    if (!target) {
+      recordBandTrace(`${input}: blocked (no active unlocked display)`);
+      return;
+    }
+    if (busy || Date.now() - lastAt < 80) {
+      recordBandTrace(`${input}: skipped (input busy or repeated too quickly)`);
+      return;
+    }
+    recordBandTrace(`${input}: received → ${target}`);
     lastAt = Date.now();
     if (input === 'keyboard') { host.keyboard(); return; }
-    busy = true; void host.input(input as BandInput).catch(() => {}).finally(() => { busy = false; });
+    busy = true;
+    void host.input(input as BandInput)
+      .catch(() => recordBandTrace(`${input}: dispatch failed`))
+      .finally(() => { busy = false; });
   } });
   nativeBand().setListener(listener);
   Application.on(Application.exitEvent, () => nativeBand().setListener(null));
