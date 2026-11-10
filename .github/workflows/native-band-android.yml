@@ -40,7 +40,6 @@ jobs:
             vendor/air-gestures/rust/target
             ~/.gradle/caches
             ~/.gradle/wrapper
-            platforms/android/app/build/faceclaw-native
           restore-keys: native-band-${{ runner.os }}-
           key: native-band-${{ runner.os }}-${{ hashFiles('vendor/air-gestures/rust/Cargo.lock', 'native/air-gestures/build.gradle.kts') }}
       - name: Install pinned Android and Rust prerequisites
@@ -77,5 +76,4 @@ jobs:
             vendor/air-gestures/rust/target
             ~/.gradle/caches
             ~/.gradle/wrapper
-            platforms/android/app/build/faceclaw-native
           key: native-band-${{ runner.os }}-${{ hashFiles('vendor/air-gestures/rust/Cargo.lock', 'native/air-gestures/build.gradle.kts') }}
